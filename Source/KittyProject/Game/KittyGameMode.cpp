@@ -2,11 +2,21 @@
 
 
 #include "KittyGameMode.h"
-#include "Player/KittyPlayerController.h"
 
 AKittyGameMode::AKittyGameMode()
 {
-	// DefaultPawnClass = 
-	PlayerControllerClass = AKittyPlayerController::StaticClass();
+	// DefaultPawnClass
+	static ConstructorHelpers::FClassFinder<APawn> DefaultPawnClassRef(TEXT("/Script/KittyProject.KittyCharacterPlayer"));
+	if (DefaultPawnClassRef.Class)
+	{
+		DefaultPawnClass = DefaultPawnClassRef.Class;
+	}
+	
+	// Player Controller
+	static ConstructorHelpers::FClassFinder<APlayerController> PlayerConstrollerClassRef(TEXT("/Script/KittyProject.KittyPlayerController"));
+	if (PlayerConstrollerClassRef.Class)
+	{
+		PlayerControllerClass = PlayerConstrollerClassRef.Class;
+	}
 }
 
