@@ -14,4 +14,14 @@ class KITTYPROJECT_API AKittyCharacterPlayer : public AKittyCharacterBase
 {
 	GENERATED_BODY()
 	
+public:
+	AKittyCharacterPlayer();
+	
+	// Camera Section
+protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class USpringArmComponent> CameraBoom;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UCameraComponent> FollowCamera;
 };
