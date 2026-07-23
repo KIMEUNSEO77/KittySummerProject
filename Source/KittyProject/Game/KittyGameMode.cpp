@@ -2,4 +2,11 @@
 
 
 #include "KittyGameMode.h"
+#include "Player/KittyPlayerController.h"
+
+AKittyGameMode::AKittyGameMode()
+{
+	// DefaultPawnClass = 
+	PlayerControllerClass = AKittyPlayerController::StaticClass();
+}
 

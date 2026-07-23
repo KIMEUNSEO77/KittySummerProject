@@ -14,4 +14,6 @@ class KITTYPROJECT_API AKittyGameMode : public AGameModeBase
 {
 	GENERATED_BODY()
 	
+public:
+	AKittyGameMode();
 };
