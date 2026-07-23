@@ -3,14 +3,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Character/KittyCharacterBase.h"
-#include "KittyCharacterPlayer.generated.h"
+#include "GameFramework/GameModeBase.h"
+#include "KittyGameMode.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class KITTYPROJECT_API AKittyCharacterPlayer : public AKittyCharacterBase
+class KITTYPROJECT_API AKittyGameMode : public AGameModeBase
 {
 	GENERATED_BODY()
 	
