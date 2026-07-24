@@ -13,4 +13,10 @@ UCLASS()
 class KITTYPROJECT_API AKittyCharacterNonplayer : public AKittyCharacterBase
 {
 	GENERATED_BODY()
+	
+public:
+	AKittyCharacterNonplayer();
+	
+	protected:
+	virtual void PostInitializeComponents() override;
 };
