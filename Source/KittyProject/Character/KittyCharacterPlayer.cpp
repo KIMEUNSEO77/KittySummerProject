@@ -8,6 +8,9 @@
 #include "EnhancedInputSubsystems.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "InputAction.h"
+#include "InputMappingContext.h"
+#include "UObject/ConstructorHelpers.h"
 
 AKittyCharacterPlayer::AKittyCharacterPlayer()
 {
@@ -20,6 +23,35 @@ AKittyCharacterPlayer::AKittyCharacterPlayer()
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	FollowCamera->bUsePawnControlRotation = false;
+
+	// Input assets
+	static ConstructorHelpers::FObjectFinder<UInputMappingContext> InputMappingContextRef(
+		TEXT("/Script/EnhancedInput.InputMappingContext'/Game/Input/IMC_Default.IMC_Default'"));
+	if (InputMappingContextRef.Succeeded())
+	{
+		DefaultMappingContext = InputMappingContextRef.Object;
+	}
+
+	static ConstructorHelpers::FObjectFinder<UInputAction> InputActionMoveRef(
+		TEXT("/Script/EnhancedInput.InputAction'/Game/Input/Actions/IA_Move.IA_Move'"));
+	if (InputActionMoveRef.Succeeded())
+	{
+		MoveAction = InputActionMoveRef.Object;
+	}
+
+	static ConstructorHelpers::FObjectFinder<UInputAction> InputActionJumpRef(
+		TEXT("/Script/EnhancedInput.InputAction'/Game/Input/Actions/IA_Jump.IA_Jump'"));
+	if (InputActionJumpRef.Succeeded())
+	{
+		JumpAction = InputActionJumpRef.Object;
+	}
+
+	static ConstructorHelpers::FObjectFinder<UInputAction> InputActionLookRef(
+		TEXT("/Script/EnhancedInput.InputAction'/Game/Input/Actions/IA_Look.IA_Look'"));
+	if (InputActionLookRef.Succeeded())
+	{
+		LookAction = InputActionLookRef.Object;
+	}
 }
 
 void AKittyCharacterPlayer::BeginPlay()
