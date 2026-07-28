@@ -24,6 +24,10 @@ protected:
 public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	
+	// Character Control Section
+protected:
+	virtual void SetCharacterControlData(const class UKittyCharacterControlData* CharacterControlData) override;	
+	
 	// Camera Section
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))

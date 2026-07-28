@@ -10,6 +10,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "InputAction.h"
 #include "InputMappingContext.h"
+#include "KittyCharacterControlData.h"
 #include "UObject/ConstructorHelpers.h"
 
 AKittyCharacterPlayer::AKittyCharacterPlayer()
@@ -100,6 +101,19 @@ void AKittyCharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInp
 		EnhancedInputComponent->BindAction(
 			LookAction, ETriggerEvent::Triggered, this, &AKittyCharacterPlayer::Look);
 	}
+}
+
+void AKittyCharacterPlayer::SetCharacterControlData(const class UKittyCharacterControlData* CharacterControlData)
+{
+	Super::SetCharacterControlData(CharacterControlData);
+	
+	CameraBoom->TargetArmLength = CharacterControlData->TargetArmLength;
+	CameraBoom->SetRelativeRotation(CharacterControlData->RelativeRotation);
+	CameraBoom->bUsePawnControlRotation = CharacterControlData->bUsePawnControlRotation;
+	CameraBoom->bInheritPitch = CharacterControlData->bInheritPitch;
+	CameraBoom->bInheritRoll = CharacterControlData->bInheritRoll;
+	CameraBoom->bInheritYaw = CharacterControlData->bInheritYaw;
+	CameraBoom->bDoCollisionTest = CharacterControlData->bDoCollisionTest;
 }
 
 void AKittyCharacterPlayer::Move(const FInputActionValue& Value)
