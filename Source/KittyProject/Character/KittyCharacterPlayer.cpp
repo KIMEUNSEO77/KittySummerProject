@@ -26,28 +26,28 @@ AKittyCharacterPlayer::AKittyCharacterPlayer()
 
 	// Input assets
 	static ConstructorHelpers::FObjectFinder<UInputMappingContext> InputMappingContextRef(
-		TEXT("/Script/EnhancedInput.InputMappingContext'/Game/Input/IMC_Default.IMC_Default'"));
+		TEXT("/Script/EnhancedInput.InputMappingContext'/Game/MyInput/Input/IMC_Default.IMC_Default'"));
 	if (InputMappingContextRef.Succeeded())
 	{
 		DefaultMappingContext = InputMappingContextRef.Object;
 	}
 
 	static ConstructorHelpers::FObjectFinder<UInputAction> InputActionMoveRef(
-		TEXT("/Script/EnhancedInput.InputAction'/Game/Input/Actions/IA_Move.IA_Move'"));
+		TEXT("/Script/EnhancedInput.InputAction'/Game/MyInput/Input/Actions/IA_Move.IA_Move'"));
 	if (InputActionMoveRef.Succeeded())
 	{
 		MoveAction = InputActionMoveRef.Object;
 	}
 
 	static ConstructorHelpers::FObjectFinder<UInputAction> InputActionJumpRef(
-		TEXT("/Script/EnhancedInput.InputAction'/Game/Input/Actions/IA_Jump.IA_Jump'"));
+		TEXT("/Script/EnhancedInput.InputAction'/Game/MyInput/Input/Actions/IA_Jump.IA_Jump'"));
 	if (InputActionJumpRef.Succeeded())
 	{
 		JumpAction = InputActionJumpRef.Object;
 	}
 
 	static ConstructorHelpers::FObjectFinder<UInputAction> InputActionLookRef(
-		TEXT("/Script/EnhancedInput.InputAction'/Game/Input/Actions/IA_Look.IA_Look'"));
+		TEXT("/Script/EnhancedInput.InputAction'/Game/MyInput/Input/Actions/IA_Look.IA_Look'"));
 	if (InputActionLookRef.Succeeded())
 	{
 		LookAction = InputActionLookRef.Object;
@@ -119,8 +119,8 @@ void AKittyCharacterPlayer::Move(const FInputActionValue& Value)
 	const FVector RightDirection =
 		FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 
-	AddMovementInput(ForwardDirection, MovementVector.Y);
-	AddMovementInput(RightDirection, MovementVector.X);
+	AddMovementInput(ForwardDirection, MovementVector.X);
+	AddMovementInput(RightDirection, MovementVector.Y);
 }
 
 void AKittyCharacterPlayer::Look(const FInputActionValue& Value)
