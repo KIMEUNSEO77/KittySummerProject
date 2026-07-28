@@ -12,6 +12,7 @@
 #include "InputMappingContext.h"
 #include "KittyCharacterControlData.h"
 #include "UObject/ConstructorHelpers.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 AKittyCharacterPlayer::AKittyCharacterPlayer()
 {
@@ -51,9 +52,21 @@ AKittyCharacterPlayer::AKittyCharacterPlayer()
 	}
 	
 	static ConstructorHelpers::FObjectFinder<UInputAction> InputActionQuaterMoveRef(TEXT("/Game/MyInput/Input/Actions/IA_QuaterMove.IA_QuaterMove"));
-	if (InputActionShoulderMoveRef.Succeeded())
+	if (InputActionQuaterMoveRef.Succeeded())
 	{
 		QuaterMoveAction = InputActionQuaterMoveRef.Object;
+	}
+	
+	static ConstructorHelpers::FObjectFinder<UInputAction> MouseLookActionRef(TEXT("/Game/MyInput/Input/Actions/IA_MouseLook.IA_MouseLook"));
+	if (MouseLookActionRef.Succeeded())
+	{
+		MouseLookAction = MouseLookActionRef.Object;
+	}
+
+	static ConstructorHelpers::FObjectFinder<UInputMappingContext> MouseLookContextRef(TEXT("/Game/MyInput/Input/IMC_MouseLook.IMC_MouseLook"));
+	if (MouseLookContextRef.Succeeded())
+	{
+		MouseLookMappingContext = MouseLookContextRef.Object;
 	}
 	
 	CurrentCharacterControlType = ECharacterControlType::Shoulder;
@@ -78,6 +91,8 @@ void AKittyCharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInp
 	EnhancedInputComponent->BindAction(ShoulderMoveAction, ETriggerEvent::Triggered, this, &AKittyCharacterPlayer::ShoulderMove);
 	EnhancedInputComponent->BindAction(ShoulderLookAction, ETriggerEvent::Triggered, this, &AKittyCharacterPlayer::ShoulderLook);
 	EnhancedInputComponent->BindAction(QuaterMoveAction, ETriggerEvent::Triggered, this, &AKittyCharacterPlayer::QuaterMove);
+	
+	EnhancedInputComponent->BindAction(MouseLookAction,ETriggerEvent::Triggered,this,&AKittyCharacterPlayer::ShoulderLook);
 }
 
 void AKittyCharacterPlayer::ChangeCharacterControl()
@@ -95,21 +110,46 @@ void AKittyCharacterPlayer::ChangeCharacterControl()
 void AKittyCharacterPlayer::SetCharacterControl(ECharacterControlType NewCharacterControlType)
 {
 	UKittyCharacterControlData* NewCharacterControl = CharacterControlManager[NewCharacterControlType];
+
 	check(NewCharacterControl);
-	
+
 	SetCharacterControlData(NewCharacterControl);
-	
+
+	// Shoulder View Camera&Control Setting
+	if (NewCharacterControlType == ECharacterControlType::Shoulder)
+	{
+		bUseControllerRotationYaw = false;
+
+		GetCharacterMovement()->bOrientRotationToMovement = true;
+		GetCharacterMovement()->bUseControllerDesiredRotation = false;
+
+		CameraBoom->SetUsingAbsoluteRotation(false);
+		CameraBoom->SetRelativeRotation(FRotator::ZeroRotator);
+		CameraBoom->bUsePawnControlRotation = true;
+		CameraBoom->bInheritPitch = true;
+		CameraBoom->bInheritYaw = true;
+		CameraBoom->bInheritRoll = false;
+	}
+
 	APlayerController* PlayerController = CastChecked<APlayerController>(GetController());
-	if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
+
+	if (UEnhancedInputLocalPlayerSubsystem* Subsystem =ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
 	{
 		Subsystem->ClearAllMappings();
+
 		UInputMappingContext* NewMappingContext = NewCharacterControl->InputMappingContext;
+
 		if (NewMappingContext)
 		{
 			Subsystem->AddMappingContext(NewMappingContext, 0);
 		}
+		
+		if (NewCharacterControlType == ECharacterControlType::Shoulder && MouseLookMappingContext)
+		{
+			Subsystem->AddMappingContext(MouseLookMappingContext, 1);
+		}
 	}
-	
+
 	CurrentCharacterControlType = NewCharacterControlType;
 }
 
@@ -129,11 +169,6 @@ void AKittyCharacterPlayer::SetCharacterControlData(const class UKittyCharacterC
 void AKittyCharacterPlayer::ShoulderMove(const FInputActionValue& Value)
 {
 	const FVector2D MovementVector = Value.Get<FVector2D>();
-
-	if (!Controller)
-	{
-		return;
-	}
 
 	const FRotator Rotation = Controller->GetControlRotation();
 	const FRotator YawRotation(0.0, Rotation.Yaw, 0.0);
