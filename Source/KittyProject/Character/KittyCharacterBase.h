@@ -6,6 +6,13 @@
 #include "GameFramework/Character.h"
 #include "KittyCharacterBase.generated.h"
 
+UENUM()
+enum class ECharacterControlType : uint8
+{
+	Shoulder,
+	Quater
+};
+
 UCLASS()
 class KITTYPROJECT_API AKittyCharacterBase : public ACharacter
 {
@@ -17,4 +24,7 @@ public:
 	
 protected:
 	virtual void SetCharacterControlData(const class UKittyCharacterControlData* CharacterControlData);
+	
+	UPROPERTY(EditAnywhere, Category= CharacterControl, meta=(AllowPrivateAccess="true"))
+	TMap<ECharacterControlType, class UKittyCharacterControlData*> CharacterControlManager;
 };
