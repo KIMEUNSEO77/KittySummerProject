@@ -115,28 +115,11 @@ void AKittyCharacterPlayer::SetCharacterControl(ECharacterControlType NewCharact
 
 	SetCharacterControlData(NewCharacterControl);
 
-	// Shoulder View Camera&Control Setting
-	if (NewCharacterControlType == ECharacterControlType::Shoulder)
-	{
-		bUseControllerRotationYaw = false;
-
-		GetCharacterMovement()->bOrientRotationToMovement = true;
-		GetCharacterMovement()->bUseControllerDesiredRotation = false;
-
-		CameraBoom->SetUsingAbsoluteRotation(false);
-		CameraBoom->SetRelativeRotation(FRotator::ZeroRotator);
-		CameraBoom->bUsePawnControlRotation = true;
-		CameraBoom->bInheritPitch = true;
-		CameraBoom->bInheritYaw = true;
-		CameraBoom->bInheritRoll = false;
-	}
-
 	APlayerController* PlayerController = CastChecked<APlayerController>(GetController());
 
 	if (UEnhancedInputLocalPlayerSubsystem* Subsystem =ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
 	{
 		Subsystem->ClearAllMappings();
-
 		UInputMappingContext* NewMappingContext = NewCharacterControl->InputMappingContext;
 
 		if (NewMappingContext)
