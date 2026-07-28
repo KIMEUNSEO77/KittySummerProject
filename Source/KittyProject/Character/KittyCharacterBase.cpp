@@ -4,6 +4,7 @@
 #include "KittyCharacterBase.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "KittyCharacterControlData.h"
 
 // Sets default values
 AKittyCharacterBase::AKittyCharacterBase()
@@ -37,11 +38,29 @@ AKittyCharacterBase::AKittyCharacterBase()
 		GetMesh()->SetSkeletalMesh(CharacterMeshRef.Object);
 	}
 	
-	//static ConstructorHelpers::FClassFinder<UAnimInstance> AnimInstanceClassRef(TEXT("SkeletalMesh"));
-	//if (AnimInstanceClassRef.Class)
-	//{
-	//	GetMesh()->SetAnimInstanceClass(AnimInstanceClassRef.Class);
-	//}
+	// Control Data
+	static ConstructorHelpers::FObjectFinder<UKittyCharacterControlData> ShoulderDataRef(TEXT("/Game/CharacterControl/KTC_Shoulder.KTC_Shoulder"));
+	if (ShoulderDataRef.Object)
+	{
+		CharacterControlManager.Add(ECharacterControlType::Shoulder, ShoulderDataRef.Object);
+	}
+	
+	static ConstructorHelpers::FObjectFinder<UKittyCharacterControlData> QuaterDataRef(TEXT("/Game/CharacterControl/KTC_Quater.KTC_Quater"));
+	if (QuaterDataRef.Object)
+	{
+		CharacterControlManager.Add(ECharacterControlType::Quater, QuaterDataRef.Object);
+	}
+}
+
+void AKittyCharacterBase::SetCharacterControlData(const class UKittyCharacterControlData* CharacterControlData)
+{
+	// Pawn
+	bUseControllerRotationYaw = CharacterControlData->bUseControllerRotationYaw;
+	
+	// Character Movement
+	GetCharacterMovement()->bOrientRotationToMovement = CharacterControlData->bOrientRotationToMovement;
+	GetCharacterMovement()->bUseControllerDesiredRotation = CharacterControlData->bUseControllerDesiredRotation;
+	GetCharacterMovement()->RotationRate = CharacterControlData->RotationRate;
 }
 
 
