@@ -14,4 +14,7 @@ class KITTYPROJECT_API AKittyCharacterBase : public ACharacter
 public:
 	// Sets default values for this character's properties
 	AKittyCharacterBase();
+	
+protected:
+	virtual void SetCharacterControlData(const class UKittyCharacterControlData* CharacterControlData);
 };
