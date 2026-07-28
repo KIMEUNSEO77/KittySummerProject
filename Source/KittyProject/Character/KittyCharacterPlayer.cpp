@@ -114,10 +114,8 @@ void AKittyCharacterPlayer::Move(const FInputActionValue& Value)
 	const FRotator Rotation = Controller->GetControlRotation();
 	const FRotator YawRotation(0.0, Rotation.Yaw, 0.0);
 
-	const FVector ForwardDirection =
-		FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-	const FVector RightDirection =
-		FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
+	const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
+	const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 
 	AddMovementInput(ForwardDirection, MovementVector.X);
 	AddMovementInput(RightDirection, MovementVector.Y);
