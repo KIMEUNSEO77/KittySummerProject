@@ -25,82 +25,92 @@ AKittyCharacterPlayer::AKittyCharacterPlayer()
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	FollowCamera->bUsePawnControlRotation = false;
 
-	// Input assets
-	static ConstructorHelpers::FObjectFinder<UInputMappingContext> InputMappingContextRef(
-		TEXT("/Script/EnhancedInput.InputMappingContext'/Game/MyInput/Input/IMC_Default.IMC_Default'"));
-	if (InputMappingContextRef.Succeeded())
-	{
-		DefaultMappingContext = InputMappingContextRef.Object;
-	}
-
-	static ConstructorHelpers::FObjectFinder<UInputAction> InputActionMoveRef(
-		TEXT("/Script/EnhancedInput.InputAction'/Game/MyInput/Input/Actions/IA_Move.IA_Move'"));
-	if (InputActionMoveRef.Succeeded())
-	{
-		MoveAction = InputActionMoveRef.Object;
-	}
-
-	static ConstructorHelpers::FObjectFinder<UInputAction> InputActionJumpRef(
-		TEXT("/Script/EnhancedInput.InputAction'/Game/MyInput/Input/Actions/IA_Jump.IA_Jump'"));
+	// Input
+	static ConstructorHelpers::FObjectFinder<UInputAction> InputActionJumpRef(TEXT("/Game/MyInput/Input/Actions/IA_Jump.IA_Jump"));
 	if (InputActionJumpRef.Succeeded())
 	{
 		JumpAction = InputActionJumpRef.Object;
 	}
-
-	static ConstructorHelpers::FObjectFinder<UInputAction> InputActionLookRef(
-		TEXT("/Script/EnhancedInput.InputAction'/Game/MyInput/Input/Actions/IA_Look.IA_Look'"));
-	if (InputActionLookRef.Succeeded())
+	
+	static ConstructorHelpers::FObjectFinder<UInputAction> InputChangeControlRef(TEXT("/Game/MyInput/Input/Actions/IA_ChangeControl.IA_ChangeControl"));
+	if (InputChangeControlRef.Succeeded())
 	{
-		LookAction = InputActionLookRef.Object;
+		ChangeControlAction = InputChangeControlRef.Object;
 	}
+	
+	static ConstructorHelpers::FObjectFinder<UInputAction> InputActionShoulderMoveRef(TEXT("/Game/MyInput/Input/Actions/IA_ShoulderMove.IA_ShoulderMove"));
+	if (InputActionShoulderMoveRef.Succeeded())
+	{
+		ShoulderMoveAction = InputActionShoulderMoveRef.Object;
+	}
+	
+	static ConstructorHelpers::FObjectFinder<UInputAction> InputActionShoulderLookRef(TEXT("/Game/MyInput/Input/Actions/IA_ShoulderLook.IA_ShoulderLook"));
+	if (InputActionShoulderLookRef.Succeeded())
+	{
+		ShoulderLookAction = InputActionShoulderLookRef.Object;
+	}
+	
+	static ConstructorHelpers::FObjectFinder<UInputAction> InputActionQuaterMoveRef(TEXT("/Game/MyInput/Input/Actions/IA_QuaterMove.IA_QuaterMove"));
+	if (InputActionShoulderMoveRef.Succeeded())
+	{
+		QuaterMoveAction = InputActionQuaterMoveRef.Object;
+	}
+	
+	CurrentCharacterControlType = ECharacterControlType::Shoulder;
 }
 
 void AKittyCharacterPlayer::BeginPlay()
 {
 	Super::BeginPlay();
-
-	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
-	{
-		if (ULocalPlayer* LocalPlayer = PlayerController->GetLocalPlayer())
-		{
-			if (UEnhancedInputLocalPlayerSubsystem* Subsystem =
-				ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(LocalPlayer))
-			{
-				if (DefaultMappingContext)
-				{
-					Subsystem->AddMappingContext(DefaultMappingContext, 0);
-				}
-			}
-		}
-	}
+	
+	SetCharacterControl(CurrentCharacterControlType);
 }
 
 void AKittyCharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
-	UEnhancedInputComponent* EnhancedInputComponent =
-		CastChecked<UEnhancedInputComponent>(PlayerInputComponent);
+	UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent);
+	
+	EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &ACharacter::Jump);
+	EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
+	EnhancedInputComponent->BindAction(ChangeControlAction, ETriggerEvent::Triggered, this, &AKittyCharacterPlayer::ChangeCharacterControl);
+	EnhancedInputComponent->BindAction(ShoulderMoveAction, ETriggerEvent::Triggered, this, &AKittyCharacterPlayer::ShoulderMove);
+	EnhancedInputComponent->BindAction(ShoulderLookAction, ETriggerEvent::Triggered, this, &AKittyCharacterPlayer::ShoulderLook);
+	EnhancedInputComponent->BindAction(QuaterMoveAction, ETriggerEvent::Triggered, this, &AKittyCharacterPlayer::QuaterMove);
+}
 
-	if (JumpAction)
+void AKittyCharacterPlayer::ChangeCharacterControl()
+{
+	if (CurrentCharacterControlType == ECharacterControlType::Shoulder)
 	{
-		EnhancedInputComponent->BindAction(
-			JumpAction, ETriggerEvent::Triggered, this, &ACharacter::Jump);
-		EnhancedInputComponent->BindAction(
-			JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
+		SetCharacterControl(ECharacterControlType::Quater);
 	}
+	else if (CurrentCharacterControlType == ECharacterControlType::Quater)
+	{
+		SetCharacterControl(ECharacterControlType::Shoulder);
+	}
+}
 
-	if (MoveAction)
+void AKittyCharacterPlayer::SetCharacterControl(ECharacterControlType NewCharacterControlType)
+{
+	UKittyCharacterControlData* NewCharacterControl = CharacterControlManager[NewCharacterControlType];
+	check(NewCharacterControl);
+	
+	SetCharacterControlData(NewCharacterControl);
+	
+	APlayerController* PlayerController = CastChecked<APlayerController>(GetController());
+	if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
 	{
-		EnhancedInputComponent->BindAction(
-			MoveAction, ETriggerEvent::Triggered, this, &AKittyCharacterPlayer::Move);
+		Subsystem->ClearAllMappings();
+		UInputMappingContext* NewMappingContext = NewCharacterControl->InputMappingContext;
+		if (NewMappingContext)
+		{
+			Subsystem->AddMappingContext(NewMappingContext, 0);
+		}
 	}
-
-	if (LookAction)
-	{
-		EnhancedInputComponent->BindAction(
-			LookAction, ETriggerEvent::Triggered, this, &AKittyCharacterPlayer::Look);
-	}
+	
+	CurrentCharacterControlType = NewCharacterControlType;
 }
 
 void AKittyCharacterPlayer::SetCharacterControlData(const class UKittyCharacterControlData* CharacterControlData)
@@ -116,7 +126,7 @@ void AKittyCharacterPlayer::SetCharacterControlData(const class UKittyCharacterC
 	CameraBoom->bDoCollisionTest = CharacterControlData->bDoCollisionTest;
 }
 
-void AKittyCharacterPlayer::Move(const FInputActionValue& Value)
+void AKittyCharacterPlayer::ShoulderMove(const FInputActionValue& Value)
 {
 	const FVector2D MovementVector = Value.Get<FVector2D>();
 
@@ -135,10 +145,15 @@ void AKittyCharacterPlayer::Move(const FInputActionValue& Value)
 	AddMovementInput(RightDirection, MovementVector.Y);
 }
 
-void AKittyCharacterPlayer::Look(const FInputActionValue& Value)
+void AKittyCharacterPlayer::ShoulderLook(const FInputActionValue& Value)
 {
 	const FVector2D LookAxisVector = Value.Get<FVector2D>();
 
 	AddControllerYawInput(LookAxisVector.X);
 	AddControllerPitchInput(LookAxisVector.Y);
+}
+
+void AKittyCharacterPlayer::QuaterMove(const FInputActionValue& Value)
+{
+	const FVector2D MovementVector = Value.Get<FVector2D>();
 }
