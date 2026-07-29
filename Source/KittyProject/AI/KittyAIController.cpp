@@ -25,6 +25,7 @@ void AKittyAIController::RunAI()
 	UBlackboardComponent* BlackboardPtr = Blackboard.Get();
 	if (UseBlackboard(BBAsset, BlackboardPtr))
 	{
+		Blackboard->SetValueAsVector(TEXT("HomePos"), GetPawn()->GetActorLocation());
 		bool RunResult = RunBehaviorTree(BTAsset);
 		ensure(RunResult);
 	}
