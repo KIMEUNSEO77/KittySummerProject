@@ -34,6 +34,6 @@ void UKittyAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		GroundSpeed = Velocity.Size2D();
 		bIsIdle = GroundSpeed < MovingThreshould;
 		bIsFalling = Movement->IsFalling();
-		bIsJumping = Owner->IsJumpProvidingForce();
+		bIsJumping = bIsFalling && Velocity.Z > 0.0f;
 	}
 }
