@@ -85,8 +85,8 @@ void AKittyCharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInp
 
 	UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent);
 	
-	EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &ACharacter::Jump);
-	EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
+	EnhancedInputComponent->BindAction(JumpAction,ETriggerEvent::Started,this,&AKittyCharacterPlayer::JumpStart);
+	EnhancedInputComponent->BindAction(JumpAction,ETriggerEvent::Completed,this,&AKittyCharacterPlayer::JumpEnd);
 	EnhancedInputComponent->BindAction(ChangeControlAction, ETriggerEvent::Triggered, this, &AKittyCharacterPlayer::ChangeCharacterControl);
 	EnhancedInputComponent->BindAction(ShoulderMoveAction, ETriggerEvent::Triggered, this, &AKittyCharacterPlayer::ShoulderMove);
 	EnhancedInputComponent->BindAction(ShoulderLookAction, ETriggerEvent::Triggered, this, &AKittyCharacterPlayer::ShoulderLook);
@@ -191,4 +191,16 @@ void AKittyCharacterPlayer::QuaterMove(const FInputActionValue& Value)
 	FVector MoveDirection = FVector(MovementVector.X, MovementVector.Y, 0.0f);
 	GetController()->SetControlRotation(FRotationMatrix::MakeFromX(MoveDirection).Rotator());
 	AddMovementInput(MoveDirection, MovementVectorSize);
+}
+
+void AKittyCharacterPlayer::JumpStart()
+{
+	bIsJumping = true;
+	Jump();
+}
+
+void AKittyCharacterPlayer::JumpEnd()
+{
+	bIsJumping = false;
+	StopJumping();
 }
