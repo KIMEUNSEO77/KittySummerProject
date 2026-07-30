@@ -67,4 +67,9 @@ protected:
 	void QuaterMove(const FInputActionValue& Value);
 	
 	ECharacterControlType CurrentCharacterControlType;
+	
+public:
+	void JumpStart();
+	void JumpEnd();
+	bool bIsJumping = false;
 };

@@ -4,6 +4,7 @@
 #include "Animation/KittyAnimInstance.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Character/KittyCharacterPlayer.h"
 
 UKittyAnimInstance::UKittyAnimInstance()
 {
@@ -34,6 +35,9 @@ void UKittyAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		GroundSpeed = Velocity.Size2D();
 		bIsIdle = GroundSpeed < MovingThreshould;
 		bIsFalling = Movement->IsFalling();
-		bIsJumping = bIsFalling && Velocity.Z > 0.0f;
+		if (AKittyCharacterPlayer* Player = Cast<AKittyCharacterPlayer>(Owner))
+		{
+			bIsJumping = Player->bIsJumping;
+		}
 	}
 }
