@@ -4,7 +4,13 @@
 
 #include "CoreMinimal.h"
 #include "AIController.h"
+#include "Perception/AIPerceptionTypes.h"
 #include "KittyAIController.generated.h"
+
+class UAIPerceptionComponent;
+class UAISenseConfig_Sight;
+class UBlackboardData;
+class UBehaviorTree;
 
 /**
  * 
@@ -22,10 +28,31 @@ public:
 protected:
 	virtual void OnPossess(APawn* InPawn) override;
 	
+protected:
+	void ApplySightConfig();
+	
+	UFUNCTION()
+	void OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus);
+	
 private:
 	UPROPERTY()
 	TObjectPtr<class UBlackboardData> BBAsset;
 	
 	UPROPERTY()
 	TObjectPtr<class UBehaviorTree> BTAsset;
+	
+	UPROPERTY(	VisibleAnywhere, BlueprintReadOnly, Category = "AI|Perception", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UAIPerceptionComponent> AIPerceptionComponent;
+	
+	UPROPERTY()
+	TObjectPtr<UAISenseConfig_Sight> SightConfig;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI|Sight", meta = (AllowPrivateAccess = "true", ClampMin = "0.0"))
+	float SightRadius = 700.0f;
+	
+	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category = "AI|Sight",meta = (AllowPrivateAccess = "true", ClampMin = "0.0"))
+	float LoseSightRadius = 850.0f;
+	
+	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category = "AI|Sight",meta = (AllowPrivateAccess = "true",ClampMin = "0.0",ClampMax = "180.0"))
+	float PeripheralVisionHalfAngle = 45.0f;
 };
