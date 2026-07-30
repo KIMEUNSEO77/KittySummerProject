@@ -24,7 +24,7 @@ AKittyCharacterBase::AKittyCharacterBase()
 	GetCharacterMovement()->JumpZVelocity = 600.f;
 	GetCharacterMovement()->AirControl = 0.35f;
 	GetCharacterMovement()->MaxWalkSpeed = 700.f;
-	GetCharacterMovement()->MaxAcceleration = 500.f;
+	GetCharacterMovement()->MaxAcceleration = 300.f;
 	GetCharacterMovement()->MinAnalogWalkSpeed = 20.f;
 	GetCharacterMovement()->BrakingDecelerationWalking = 2000.f;
 	
