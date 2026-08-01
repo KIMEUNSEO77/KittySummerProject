@@ -5,8 +5,6 @@
 
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
-#include "Character/KittyCharacterPlayer.h"
-#include "Engine/Engine.h"
 
 // Sets default values
 AKTItemPickupBase::AKTItemPickupBase()
@@ -52,30 +50,6 @@ void AKTItemPickupBase::BeginPlay()
 void AKTItemPickupBase::Interact_Implementation(AActor* Interactor)
 {
 	// 권총, 출입증 등의 자식 클래스에서 실제 획득 처리를 구현
-	AKittyCharacterPlayer* Player = Cast<AKittyCharacterPlayer>(Interactor);
-
-	if (!IsValid(Player))
-	{
-		return;
-	}
-
-	const bool bAcquired =
-		Player->AcquirePistol(this);
-
-	if (!bAcquired)
-	{
-		return;
-	}
-
-	if (GEngine)
-	{
-		GEngine->AddOnScreenDebugMessage(
-			4,
-			2.0f,
-			FColor::Green,
-			TEXT("권총 획득 성공")
-		);
-	}
 }
 
 FText AKTItemPickupBase::GetInteractionText_Implementation() const
