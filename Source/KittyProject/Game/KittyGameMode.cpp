@@ -6,7 +6,7 @@
 AKittyGameMode::AKittyGameMode()
 {
 	// DefaultPawnClass
-	static ConstructorHelpers::FClassFinder<APawn> DefaultPawnClassRef(TEXT("/Script/KittyProject.KittyCharacterPlayer"));
+	static ConstructorHelpers::FClassFinder<APawn> DefaultPawnClassRef(TEXT("/Game/Blueprint/BP_KittyCharacterPlayer"));
 	if (DefaultPawnClassRef.Class)
 	{
 		DefaultPawnClass = DefaultPawnClassRef.Class;

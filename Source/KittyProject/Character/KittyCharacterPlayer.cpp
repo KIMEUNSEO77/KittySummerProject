@@ -16,6 +16,7 @@
 #include "Engine/World.h"
 #include "Engine/Engine.h"
 #include "Engine/OverlapResult.h"
+#include "Components/SkeletalMeshComponent.h"
 
 AKittyCharacterPlayer::AKittyCharacterPlayer()
 {
@@ -74,6 +75,12 @@ AKittyCharacterPlayer::AKittyCharacterPlayer()
 		MouseLookMappingContext = MouseLookContextRef.Object;
 	}
 	
+	static ConstructorHelpers::FObjectFinder<UInputAction> InputActionInteractionRef(TEXT("/Game/MyInput/Input/Actions/IA_Interaction.IA_Interaction"));
+	if (InputActionInteractionRef.Succeeded())
+	{
+		InteractionAction = InputActionInteractionRef.Object;
+	}
+	
 	CurrentCharacterControlType = ECharacterControlType::Shoulder;
 }
 
@@ -105,6 +112,8 @@ void AKittyCharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInp
 	EnhancedInputComponent->BindAction(QuaterMoveAction, ETriggerEvent::Triggered, this, &AKittyCharacterPlayer::QuaterMove);
 	
 	EnhancedInputComponent->BindAction(MouseLookAction,ETriggerEvent::Triggered,this,&AKittyCharacterPlayer::ShoulderLook);
+	
+	EnhancedInputComponent->BindAction(InteractionAction,ETriggerEvent::Started,this,&AKittyCharacterPlayer::Interact);
 }
 
 void AKittyCharacterPlayer::ChangeCharacterControl()
@@ -309,4 +318,87 @@ void AKittyCharacterPlayer::CheckForInteractable()
 			PromptText.ToString()
 		);
 	}
+}
+
+void AKittyCharacterPlayer::Interact()
+{
+	// 현재 상호작용 대상이 없으면 아무것도 하지 않음
+	if (!IsValid(CurrentInteractable))
+	{
+		return;
+	}
+
+	// 대상이 상호작용 인터페이스를 구현했는지 확인
+	if (!CurrentInteractable->GetClass()->ImplementsInterface(UKTInteractableInterface::StaticClass()))
+	{
+		return;
+	}
+
+	// 인터페이스를 통해 대상의 상호작용 함수 호출
+	IKTInteractableInterface::Execute_Interact(CurrentInteractable, this);
+
+	// 동작 확인을 위한 임시 메시지
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(3, 2.0f, FColor::Green, TEXT("상호작용 실행 성공"));
+	}
+}
+
+bool AKittyCharacterPlayer::AcquirePistol(class AActor* PistolActor)
+{
+	if (!IsValid(PistolActor))
+	{
+		return false;
+	}
+
+	// 이미 권총을 가지고 있다면 획득하지 않음
+	if (bHasPistol)
+	{
+		return false;
+	}
+
+	USkeletalMeshComponent* CharacterMesh = GetMesh();
+
+	if (!IsValid(CharacterMesh))
+	{
+		return false;
+	}
+
+	const FName PistolSocketName(TEXT("PistolSocket"));
+
+	// 소켓 이름이 잘못되었을 경우 장착하지 않음
+	if (!CharacterMesh->DoesSocketExist(PistolSocketName))
+	{
+		UE_LOG(
+			LogTemp,
+			Warning,
+			TEXT("PistolSocket이 캐릭터 Mesh에 없습니다.")
+		);
+
+		return false;
+	}
+
+	// 바닥에서 사용하던 충돌을 모두 비활성화
+	PistolActor->SetActorEnableCollision(false);
+
+	// 플레이어가 권총 Actor의 소유자가 됨
+	PistolActor->SetOwner(this);
+
+	const bool bAttached = PistolActor->AttachToComponent(
+		CharacterMesh,
+		FAttachmentTransformRules::SnapToTargetNotIncludingScale,
+		PistolSocketName
+	);
+
+	if (!bAttached)
+	{
+		PistolActor->SetActorEnableCollision(true);
+		PistolActor->SetOwner(nullptr);
+		return false;
+	}
+
+	EquippedPistol = PistolActor;
+	bHasPistol = true;
+
+	return true;
 }

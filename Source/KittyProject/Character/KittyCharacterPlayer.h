@@ -62,6 +62,10 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UInputMappingContext> MouseLookMappingContext;
 	
+	// 상호작용 입력 액션
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UInputAction> InteractionAction;
+	
 	void ShoulderMove(const FInputActionValue& Value);
 	void ShoulderLook(const FInputActionValue& Value);
 	
@@ -87,4 +91,21 @@ protected:
 	// 현재 플레이어가 바라보고 있는 상호작용 대상
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Interaction")
 	TObjectPtr<class AActor> CurrentInteractable;
+	
+	// 현재 감지된 Actor와 상호작용
+	void Interact();
+	
+	// Pistol Section
+public:
+	// 권총 Actor를 플레이어 손에 장착
+	bool AcquirePistol(class AActor* PistolActor);
+	
+protected:
+	// 권총 보유 여부
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon")
+	bool bHasPistol = false;
+
+	// 현재 장착된 권총
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Weapon")
+	TObjectPtr<class AActor> EquippedPistol;
 };
