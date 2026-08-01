@@ -12,10 +12,15 @@
 #include "InputMappingContext.h"
 #include "KittyCharacterControlData.h"
 #include "UObject/ConstructorHelpers.h"
-#include "GameFramework/CharacterMovementComponent.h"
+#include "Interface/KTInteractableInterface.h"
+#include "Engine/World.h"
+#include "Engine/Engine.h"
+#include "Engine/OverlapResult.h"
 
 AKittyCharacterPlayer::AKittyCharacterPlayer()
 {
+	PrimaryActorTick.bCanEverTick = true;
+	
 	// Camera
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(RootComponent);
@@ -77,6 +82,13 @@ void AKittyCharacterPlayer::BeginPlay()
 	Super::BeginPlay();
 	
 	SetCharacterControl(CurrentCharacterControlType);
+}
+
+void AKittyCharacterPlayer::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+	
+	CheckForInteractable();
 }
 
 void AKittyCharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -203,4 +215,98 @@ void AKittyCharacterPlayer::JumpEnd()
 {
 	bIsJumping = false;
 	StopJumping();
+}
+
+void AKittyCharacterPlayer::CheckForInteractable()
+{
+	TArray<FOverlapResult> OverlapResults;
+
+	FCollisionObjectQueryParams ObjectQueryParams;
+	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldDynamic);
+
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(this);
+
+	const FVector SearchLocation = GetActorLocation();
+	const float SearchRadius = InteractionDistance;
+
+	const bool bFoundActors = GetWorld()->OverlapMultiByObjectType(
+		OverlapResults,
+		SearchLocation,
+		FQuat::Identity,
+		ObjectQueryParams,
+		FCollisionShape::MakeSphere(SearchRadius),
+		QueryParams
+	);
+
+	AActor* BestInteractable = nullptr;
+	float BestDistanceSquared = TNumericLimits<float>::Max();
+
+	if (bFoundActors)
+	{
+		for (const FOverlapResult& OverlapResult : OverlapResults)
+		{
+			AActor* Candidate = OverlapResult.GetActor();
+
+			if (!IsValid(Candidate))
+			{
+				continue;
+			}
+
+			// 상호작용 인터페이스가 없는 Actor는 제외
+			if (!Candidate->GetClass()->ImplementsInterface(
+				UKTInteractableInterface::StaticClass()))
+			{
+				continue;
+			}
+
+			FVector ToCandidate = Candidate->GetActorLocation() - GetActorLocation();
+
+			// 높이 차이는 방향 검사에서 제외
+			ToCandidate.Z = 0.0f;
+
+			if (ToCandidate.IsNearlyZero())
+			{
+				continue;
+			}
+
+			const FVector DirectionToCandidate = ToCandidate.GetSafeNormal();
+
+			const FVector PlayerForward = GetActorForwardVector().GetSafeNormal2D();
+
+			const float ForwardDot = FVector::DotProduct(PlayerForward, DirectionToCandidate);
+
+			// 캐릭터 뒤쪽에 있는 아이템은 제외
+			if (ForwardDot < 0.2f)
+			{
+				continue;
+			}
+
+			const float DistanceSquared = ToCandidate.SizeSquared();
+
+			// 앞쪽에 있는 아이템 중 가장 가까운 것을 선택
+			if (DistanceSquared < BestDistanceSquared)
+			{
+				BestDistanceSquared = DistanceSquared;
+				BestInteractable = Candidate;
+			}
+		}
+	}
+
+	CurrentInteractable = BestInteractable;
+
+	if (IsValid(CurrentInteractable) && GEngine)
+	{
+		const FText PromptText =
+			IKTInteractableInterface::Execute_GetInteractionText(
+				CurrentInteractable
+			);
+
+		GEngine->AddOnScreenDebugMessage(
+			1,
+			0.0f,
+			FColor::Yellow,
+			PromptText.ToString()
+		);
+	}
 }

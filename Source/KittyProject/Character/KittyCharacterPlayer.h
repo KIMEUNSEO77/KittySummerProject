@@ -20,6 +20,7 @@ public:
 	
 protected:
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaTime) override;
 	
 public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
@@ -68,8 +69,22 @@ protected:
 	
 	ECharacterControlType CurrentCharacterControlType;
 	
+	// Animation Section
 public:
 	void JumpStart();
 	void JumpEnd();
 	bool bIsJumping = false;
+	
+	// Interaction Section
+protected:
+	// 매 프레임 플레이어가 바라보는 상호작용 대상을 검사
+	void CheckForInteractable();
+
+	// 상호작용 가능한 최대 거리
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Interaction")
+	float InteractionDistance = 300.0f;
+
+	// 현재 플레이어가 바라보고 있는 상호작용 대상
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Interaction")
+	TObjectPtr<class AActor> CurrentInteractable;
 };
