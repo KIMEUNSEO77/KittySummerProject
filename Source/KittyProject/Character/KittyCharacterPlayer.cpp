@@ -12,10 +12,16 @@
 #include "InputMappingContext.h"
 #include "KittyCharacterControlData.h"
 #include "UObject/ConstructorHelpers.h"
-#include "GameFramework/CharacterMovementComponent.h"
+#include "Interface/KTInteractableInterface.h"
+#include "Engine/World.h"
+#include "Engine/Engine.h"
+#include "Engine/OverlapResult.h"
+#include "Components/SkeletalMeshComponent.h"
 
 AKittyCharacterPlayer::AKittyCharacterPlayer()
 {
+	PrimaryActorTick.bCanEverTick = true;
+	
 	// Camera
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(RootComponent);
@@ -69,6 +75,12 @@ AKittyCharacterPlayer::AKittyCharacterPlayer()
 		MouseLookMappingContext = MouseLookContextRef.Object;
 	}
 	
+	static ConstructorHelpers::FObjectFinder<UInputAction> InputActionInteractionRef(TEXT("/Game/MyInput/Input/Actions/IA_Interaction.IA_Interaction"));
+	if (InputActionInteractionRef.Succeeded())
+	{
+		InteractionAction = InputActionInteractionRef.Object;
+	}
+	
 	CurrentCharacterControlType = ECharacterControlType::Shoulder;
 }
 
@@ -77,6 +89,13 @@ void AKittyCharacterPlayer::BeginPlay()
 	Super::BeginPlay();
 	
 	SetCharacterControl(CurrentCharacterControlType);
+}
+
+void AKittyCharacterPlayer::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+	
+	CheckForInteractable();
 }
 
 void AKittyCharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -93,6 +112,8 @@ void AKittyCharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInp
 	EnhancedInputComponent->BindAction(QuaterMoveAction, ETriggerEvent::Triggered, this, &AKittyCharacterPlayer::QuaterMove);
 	
 	EnhancedInputComponent->BindAction(MouseLookAction,ETriggerEvent::Triggered,this,&AKittyCharacterPlayer::ShoulderLook);
+	
+	EnhancedInputComponent->BindAction(InteractionAction,ETriggerEvent::Started,this,&AKittyCharacterPlayer::Interact);
 }
 
 void AKittyCharacterPlayer::ChangeCharacterControl()
@@ -203,4 +224,181 @@ void AKittyCharacterPlayer::JumpEnd()
 {
 	bIsJumping = false;
 	StopJumping();
+}
+
+void AKittyCharacterPlayer::CheckForInteractable()
+{
+	TArray<FOverlapResult> OverlapResults;
+
+	FCollisionObjectQueryParams ObjectQueryParams;
+	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldDynamic);
+
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(this);
+
+	const FVector SearchLocation = GetActorLocation();
+	const float SearchRadius = InteractionDistance;
+
+	const bool bFoundActors = GetWorld()->OverlapMultiByObjectType(
+		OverlapResults,
+		SearchLocation,
+		FQuat::Identity,
+		ObjectQueryParams,
+		FCollisionShape::MakeSphere(SearchRadius),
+		QueryParams
+	);
+
+	AActor* BestInteractable = nullptr;
+	float BestDistanceSquared = TNumericLimits<float>::Max();
+
+	if (bFoundActors)
+	{
+		for (const FOverlapResult& OverlapResult : OverlapResults)
+		{
+			AActor* Candidate = OverlapResult.GetActor();
+
+			if (!IsValid(Candidate))
+			{
+				continue;
+			}
+
+			// 상호작용 인터페이스가 없는 Actor는 제외
+			if (!Candidate->GetClass()->ImplementsInterface(
+				UKTInteractableInterface::StaticClass()))
+			{
+				continue;
+			}
+
+			FVector ToCandidate = Candidate->GetActorLocation() - GetActorLocation();
+
+			// 높이 차이는 방향 검사에서 제외
+			ToCandidate.Z = 0.0f;
+
+			if (ToCandidate.IsNearlyZero())
+			{
+				continue;
+			}
+
+			const FVector DirectionToCandidate = ToCandidate.GetSafeNormal();
+
+			const FVector PlayerForward = GetActorForwardVector().GetSafeNormal2D();
+
+			const float ForwardDot = FVector::DotProduct(PlayerForward, DirectionToCandidate);
+
+			// 캐릭터 뒤쪽에 있는 아이템은 제외
+			if (ForwardDot < 0.2f)
+			{
+				continue;
+			}
+
+			const float DistanceSquared = ToCandidate.SizeSquared();
+
+			// 앞쪽에 있는 아이템 중 가장 가까운 것을 선택
+			if (DistanceSquared < BestDistanceSquared)
+			{
+				BestDistanceSquared = DistanceSquared;
+				BestInteractable = Candidate;
+			}
+		}
+	}
+
+	CurrentInteractable = BestInteractable;
+
+	if (IsValid(CurrentInteractable) && GEngine)
+	{
+		const FText PromptText =
+			IKTInteractableInterface::Execute_GetInteractionText(
+				CurrentInteractable
+			);
+
+		GEngine->AddOnScreenDebugMessage(
+			1,
+			0.0f,
+			FColor::Yellow,
+			PromptText.ToString()
+		);
+	}
+}
+
+void AKittyCharacterPlayer::Interact()
+{
+	// 현재 상호작용 대상이 없으면 아무것도 하지 않음
+	if (!IsValid(CurrentInteractable))
+	{
+		return;
+	}
+
+	// 대상이 상호작용 인터페이스를 구현했는지 확인
+	if (!CurrentInteractable->GetClass()->ImplementsInterface(UKTInteractableInterface::StaticClass()))
+	{
+		return;
+	}
+
+	// 인터페이스를 통해 대상의 상호작용 함수 호출
+	IKTInteractableInterface::Execute_Interact(CurrentInteractable, this);
+
+	// 동작 확인을 위한 임시 메시지
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(3, 2.0f, FColor::Green, TEXT("상호작용 실행 성공"));
+	}
+}
+
+bool AKittyCharacterPlayer::AcquirePistol(class AActor* PistolActor)
+{
+	if (!IsValid(PistolActor))
+	{
+		return false;
+	}
+
+	// 이미 권총을 가지고 있다면 획득하지 않음
+	if (bHasPistol)
+	{
+		return false;
+	}
+
+	USkeletalMeshComponent* CharacterMesh = GetMesh();
+
+	if (!IsValid(CharacterMesh))
+	{
+		return false;
+	}
+
+	const FName PistolSocketName(TEXT("PistolSocket"));
+
+	// 소켓 이름이 잘못되었을 경우 장착하지 않음
+	if (!CharacterMesh->DoesSocketExist(PistolSocketName))
+	{
+		UE_LOG(
+			LogTemp,
+			Warning,
+			TEXT("PistolSocket이 캐릭터 Mesh에 없습니다.")
+		);
+
+		return false;
+	}
+
+	// 바닥에서 사용하던 충돌을 모두 비활성화
+	PistolActor->SetActorEnableCollision(false);
+
+	// 플레이어가 권총 Actor의 소유자가 됨
+	PistolActor->SetOwner(this);
+
+	const bool bAttached = PistolActor->AttachToComponent(
+		CharacterMesh,
+		FAttachmentTransformRules::SnapToTargetNotIncludingScale,
+		PistolSocketName
+	);
+
+	if (!bAttached)
+	{
+		PistolActor->SetActorEnableCollision(true);
+		PistolActor->SetOwner(nullptr);
+		return false;
+	}
+
+	EquippedPistol = PistolActor;
+	bHasPistol = true;
+
+	return true;
 }
