@@ -10,6 +10,9 @@
 /**
  * 
  */
+ 
+ class ATargetPoint;
+ 
 UCLASS()
 class KITTYPROJECT_API AKittyCharacterNonplayer : public AKittyCharacterBase, public IKittyCharacterAIInterface
 {
@@ -17,6 +20,16 @@ class KITTYPROJECT_API AKittyCharacterNonplayer : public AKittyCharacterBase, pu
 	
 public:
 	AKittyCharacterNonplayer();
+	
+	bool IsPatrolEnabled() const
+	{
+		return bPatrolEnabled;
+	}
+	
+	const TArray<TObjectPtr<ATargetPoint>>& GetTargetPoints() const
+	{
+		return PatrolPoint;
+	}
 	
 protected:
 	virtual void PostInitializeComponents() override;
@@ -26,4 +39,13 @@ protected:
 	virtual float GetAIDetectRange() override;
 	virtual float GetAIAttackRange() override;
 	virtual float GetAITurnSpeed() override;	
+	
+private:
+	
+	//순찰 경로 지정을 위한 값
+	UPROPERTY(EditAnywhere, Category = AI)
+	bool bPatrolEnabled;
+	
+	UPROPERTY(EditAnywhere, Category = AI)
+	TArray<TObjectPtr<ATargetPoint>> PatrolPoint;
 };
