@@ -13,6 +13,8 @@
 
 #include "GameFramework/Pawn.h"
 
+#include "Character/KittyCharacterNonplayer.h"
+
 AKittyAIController::AKittyAIController()
 {
 	static ConstructorHelpers::FObjectFinder<UBlackboardData> BBAssetRef(TEXT("/Game/AI/BB_KittyCharacter.BB_KittyCharacter"));
@@ -54,14 +56,29 @@ AKittyAIController::AKittyAIController()
 
 void AKittyAIController::RunAI()
 {
-	UBlackboardComponent* BlackboardPtr = Blackboard.Get();
+	UBlackboardComponent* BlackboardPtr = nullptr;
+
 	if (UseBlackboard(BBAsset, BlackboardPtr))
 	{
-		Blackboard->SetValueAsVector(TEXT("HomePos"), GetPawn()->GetActorLocation());
-		bool RunResult = RunBehaviorTree(BTAsset);
-		ensure(RunResult);
+		APawn* ControlledPawn = GetPawn();
+
+		if (!ControlledPawn)
+		{
+			return;
+		}
+
+		BlackboardPtr->SetValueAsVector(TEXT("HomePos"), ControlledPawn->GetActorLocation());
+
+		BlackboardPtr->SetValueAsInt(TEXT("PatrolIndex"), 0);
+
+		if (const AKittyCharacterNonplayer* NPC = Cast<AKittyCharacterNonplayer>(ControlledPawn))
+		{
+			BlackboardPtr->SetValueAsBool(TEXT("IsPatrolEnabled"),NPC->IsPatrolEnabled());
+		}
+
+		const bool bRunResult = RunBehaviorTree(BTAsset);
+		ensure(bRunResult);
 	}
-	
 }
 
 void AKittyAIController::StopAI()
