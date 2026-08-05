@@ -62,6 +62,12 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UInputMappingContext> MouseLookMappingContext;
 	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UInputAction> AimAction;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UInputAction> FireAction;
+	
 	// 상호작용 입력 액션
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UInputAction> InteractionAction;
@@ -100,6 +106,8 @@ public:
 	// 권총 Actor를 플레이어 손에 장착
 	bool AcquirePistol(class AActor* PistolActor);
 	
+	bool IsAiming() const { return bIsAiming;}
+	
 protected:
 	// 권총 보유 여부
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon")
@@ -108,4 +116,26 @@ protected:
 	// 현재 장착된 권총
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Weapon")
 	TObjectPtr<class AActor> EquippedPistol;
+	
+	void StartAiming();
+	void StopAiming();
+	void Fire();
+	void StopFiring();
+	void PerformFireTrace();
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon")
+	bool bIsAiming = false;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon")
+	bool bIsFiring = false;
+	
+	// 발사 애니메이션이 유지될 시간
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Animation")
+	float FireAnimationDuration = 0.3f;
+
+	FTimerHandle FireAnimationTimerHandle;
+	
+	// 권총의 최대 사거리
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
+	float FireRange = 10000.0f;
 };

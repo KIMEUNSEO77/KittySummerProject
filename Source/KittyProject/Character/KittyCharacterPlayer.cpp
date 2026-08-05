@@ -17,6 +17,9 @@
 #include "Engine/Engine.h"
 #include "Engine/OverlapResult.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "TimerManager.h"
+#include "DrawDebugHelpers.h"
+#include "Item/KTPistolPickup.h"
 
 AKittyCharacterPlayer::AKittyCharacterPlayer()
 {
@@ -81,6 +84,18 @@ AKittyCharacterPlayer::AKittyCharacterPlayer()
 		InteractionAction = InputActionInteractionRef.Object;
 	}
 	
+	static ConstructorHelpers::FObjectFinder<UInputAction> InputActionAimRef(TEXT("/Game/MyInput/Input/Actions/IA_Aim.IA_Aim"));
+	if (InputActionAimRef.Succeeded())
+	{
+		AimAction = InputActionAimRef.Object;
+	}
+
+	static ConstructorHelpers::FObjectFinder<UInputAction> InputActionFireRef(TEXT("/Game/MyInput/Input/Actions/IA_Fire.IA_Fire"));
+	if (InputActionFireRef.Succeeded())
+	{
+		FireAction = InputActionFireRef.Object;
+	}
+	
 	CurrentCharacterControlType = ECharacterControlType::Shoulder;
 }
 
@@ -114,6 +129,10 @@ void AKittyCharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInp
 	EnhancedInputComponent->BindAction(MouseLookAction,ETriggerEvent::Triggered,this,&AKittyCharacterPlayer::ShoulderLook);
 	
 	EnhancedInputComponent->BindAction(InteractionAction,ETriggerEvent::Started,this,&AKittyCharacterPlayer::Interact);
+	
+	EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Started, this, &AKittyCharacterPlayer::StartAiming);
+	EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Completed, this, &AKittyCharacterPlayer::StopAiming);
+	EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Started, this, &AKittyCharacterPlayer::Fire);
 }
 
 void AKittyCharacterPlayer::ChangeCharacterControl()
@@ -401,4 +420,149 @@ bool AKittyCharacterPlayer::AcquirePistol(class AActor* PistolActor)
 	bHasPistol = true;
 
 	return true;
+}
+
+void AKittyCharacterPlayer::StartAiming()
+{
+	// 권총을 획득하지 않았다면 조준할 수 없음
+	if (!bHasPistol)
+	{
+		return;
+	}
+
+	bIsAiming = true;
+
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(
+			10,
+			2.0f,
+			FColor::Green,
+			TEXT("조준 시작")
+		);
+	}
+}
+
+void AKittyCharacterPlayer::StopAiming()
+{
+	bIsAiming = false;
+	bIsFiring = false;
+
+	GetWorldTimerManager().ClearTimer(
+		FireAnimationTimerHandle
+	);
+
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(
+			10,
+			2.0f,
+			FColor::White,
+			TEXT("조준 종료")
+		);
+	}
+}
+
+void AKittyCharacterPlayer::Fire()
+{
+	if (!bHasPistol || !bIsAiming || bIsFiring)
+	{
+		return;
+	}
+
+	// 발사 쿨타임 시작
+	bIsFiring = true;
+
+	// 실제 발사 판정
+	PerformFireTrace();
+
+	GetWorldTimerManager().SetTimer(
+		FireAnimationTimerHandle,
+		this,
+		&AKittyCharacterPlayer::StopFiring,
+		FireAnimationDuration,
+		false
+	);
+}
+
+void AKittyCharacterPlayer::StopFiring()
+{
+	bIsFiring = false;
+}
+
+void AKittyCharacterPlayer::PerformFireTrace()
+{
+	UWorld* World = GetWorld();
+
+	if (!IsValid(World)) return;
+
+	AKTPistolPickup* Pistol = Cast<AKTPistolPickup>(EquippedPistol);
+
+	if (!IsValid(Pistol)) return;
+
+	const FVector TraceStart = Pistol->GetMuzzleLocation();
+	const FVector TraceDirection = Pistol->GetMuzzleForwardVector();
+	const FVector TraceEnd = TraceStart + TraceDirection * FireRange;
+
+	FHitResult HitResult;
+
+	// 세 번째 인자인 this로 플레이어 자신을 무시
+	FCollisionQueryParams QueryParams(
+		SCENE_QUERY_STAT(PistolFireTrace),
+		true,
+		this
+	);
+
+	// 장착된 권총도 무시
+	QueryParams.AddIgnoredActor(Pistol);
+
+	const bool bHit =
+		World->LineTraceSingleByChannel(
+			HitResult,
+			TraceStart,
+			TraceEnd,
+			ECC_Visibility,
+			QueryParams
+		);
+
+	const FVector DebugEnd = bHit ? HitResult.ImpactPoint : TraceEnd;
+
+	DrawDebugLine(
+		World,
+		TraceStart,
+		DebugEnd,
+		bHit ? FColor::Green : FColor::Red,
+		false,
+		1.0f,
+		0,
+		1.5f
+	);
+
+	if (bHit)
+	{
+		DrawDebugSphere(
+			World,
+			HitResult.ImpactPoint,
+			8.0f,
+			12,
+			FColor::Yellow,
+			false,
+			1.0f
+		);
+	}
+
+	AActor* HitActor = bHit ? HitResult.GetActor() : nullptr;
+
+	if (IsValid(HitActor) && GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(
+			20,
+			1.5f,
+			FColor::Cyan,
+			FString::Printf(
+				TEXT("명중: %s"),
+				*HitActor->GetName()
+			)
+		);
+	}
 }

@@ -7,10 +7,14 @@
 
 #include "Mission/KTMissionSubsystem.h"
 #include "GameplayTagContainer.h"
+#include "Components/SceneComponent.h"
 
 AKTPistolPickup::AKTPistolPickup()
 {
 	InteractionText = FText::FromString(TEXT("[F] 총 획득하기"));
+	
+	MuzzlePoint = CreateDefaultSubobject<USceneComponent>(TEXT("MuzzlePoint"));
+	MuzzlePoint->SetupAttachment(PickupMesh);
 }
 
 void AKTPistolPickup::Interact_Implementation(AActor* Interactor)
@@ -47,4 +51,24 @@ void AKTPistolPickup::Interact_Implementation(AActor* Interactor)
 	{
 		GEngine->AddOnScreenDebugMessage(4, 2.0f, FColor::Green, TEXT("권총 획득 성공"));
 	}
+}
+
+FVector AKTPistolPickup::GetMuzzleLocation() const
+{
+	if (!IsValid(MuzzlePoint))
+	{
+		return GetActorLocation();
+	}
+
+	return MuzzlePoint->GetComponentLocation();
+}
+
+FVector AKTPistolPickup::GetMuzzleForwardVector() const
+{
+	if (!IsValid(MuzzlePoint))
+	{
+		return GetActorForwardVector();
+	}
+
+	return MuzzlePoint->GetForwardVector();
 }

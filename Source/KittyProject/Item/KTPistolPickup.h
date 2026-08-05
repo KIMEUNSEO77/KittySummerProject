@@ -19,4 +19,15 @@ public:
 
 	// 권총 전용 상호작용 동작
 	virtual void Interact_Implementation(AActor* Interactor) override;
+	
+	// 총구의 월드 위치
+	FVector GetMuzzleLocation() const;
+
+	// 총구가 바라보는 월드 방향
+	FVector GetMuzzleForwardVector() const;
+	
+protected:
+	// 총구 위치와 방향을 나타내는 컴포넌트
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Pistol|Components")
+	TObjectPtr<class USceneComponent> MuzzlePoint;
 };

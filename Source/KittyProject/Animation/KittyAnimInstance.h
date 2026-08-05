@@ -48,4 +48,8 @@ public:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Character)
 	float JumpingThreshould;  // IsJumping?
+	
+	// 플레이어가 현재 권총을 조준 중인지
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Weapon)
+	bool bIsAiming = false;
 };
