@@ -17,8 +17,7 @@
 #include "Engine/Engine.h"
 #include "Engine/OverlapResult.h"
 #include "Components/SkeletalMeshComponent.h"
-#include "Animation/AnimInstance.h"
-#include "Animation/AnimMontage.h"
+#include "TimerManager.h"
 
 AKittyCharacterPlayer::AKittyCharacterPlayer()
 {
@@ -445,6 +444,11 @@ void AKittyCharacterPlayer::StartAiming()
 void AKittyCharacterPlayer::StopAiming()
 {
 	bIsAiming = false;
+	bIsFiring = false;
+
+	GetWorldTimerManager().ClearTimer(
+		FireAnimationTimerHandle
+	);
 
 	if (GEngine)
 	{
@@ -459,32 +463,26 @@ void AKittyCharacterPlayer::StopAiming()
 
 void AKittyCharacterPlayer::Fire()
 {
-	if (!bHasPistol) return;
-	if (!bIsAiming) return;
-	
-	if (!IsValid(PistolFireMontage))
+	if (!bHasPistol || !bIsAiming || bIsFiring)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("PistolFireMontage가 지정되지 않았습니다."));
-
 		return;
 	}
 
-	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	// 발사 쿨타임 시작
+	bIsFiring = true;
 
-	if (!IsValid(AnimInstance)) return;
+	// 다음 단계에서 여기에 Line Trace와 총구 이펙트 추가
 
-	// 현재 발사 Montage가 재생 중이라면 중복 실행 방지
-	if (AnimInstance->Montage_IsPlaying(PistolFireMontage)) return;
+	GetWorldTimerManager().SetTimer(
+		FireAnimationTimerHandle,
+		this,
+		&AKittyCharacterPlayer::StopFiring,
+		FireAnimationDuration,
+		false
+	);
+}
 
-	AnimInstance->Montage_Play(PistolFireMontage);
-
-	if (GEngine)
-	{
-		GEngine->AddOnScreenDebugMessage(
-			11,
-			1.0f,
-			FColor::Red,
-			TEXT("발사 애니메이션 실행")
-		);
-	}
+void AKittyCharacterPlayer::StopFiring()
+{
+	bIsFiring = false;
 }

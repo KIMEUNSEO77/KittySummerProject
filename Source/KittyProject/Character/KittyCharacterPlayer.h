@@ -117,14 +117,20 @@ protected:
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Weapon")
 	TObjectPtr<class AActor> EquippedPistol;
 	
-	// 권총 발사 애니메이션 Montage
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Animation")
-	TObjectPtr<class UAnimMontage> PistolFireMontage;
-	
 	void StartAiming();
 	void StopAiming();
 	void Fire();
+	void StopFiring();
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon")
 	bool bIsAiming = false;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon")
+	bool bIsFiring = false;
+	
+	// 발사 애니메이션이 유지될 시간
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Animation")
+	float FireAnimationDuration = 0.3f;
+
+	FTimerHandle FireAnimationTimerHandle;
 };
