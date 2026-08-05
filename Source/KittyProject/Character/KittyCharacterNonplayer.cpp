@@ -6,7 +6,7 @@
 
 AKittyCharacterNonplayer::AKittyCharacterNonplayer()
 {
-	GetMesh()->SetHiddenInGame(true);
+	GetMesh()->SetHiddenInGame(false);
 	
 	AIControllerClass = AKittyAIController::StaticClass();
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
