@@ -18,6 +18,8 @@
 #include "Engine/OverlapResult.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "TimerManager.h"
+#include "DrawDebugHelpers.h"
+#include "Item/KTPistolPickup.h"
 
 AKittyCharacterPlayer::AKittyCharacterPlayer()
 {
@@ -471,7 +473,8 @@ void AKittyCharacterPlayer::Fire()
 	// 발사 쿨타임 시작
 	bIsFiring = true;
 
-	// 다음 단계에서 여기에 Line Trace와 총구 이펙트 추가
+	// 실제 발사 판정
+	PerformFireTrace();
 
 	GetWorldTimerManager().SetTimer(
 		FireAnimationTimerHandle,
@@ -485,4 +488,81 @@ void AKittyCharacterPlayer::Fire()
 void AKittyCharacterPlayer::StopFiring()
 {
 	bIsFiring = false;
+}
+
+void AKittyCharacterPlayer::PerformFireTrace()
+{
+	UWorld* World = GetWorld();
+
+	if (!IsValid(World)) return;
+
+	AKTPistolPickup* Pistol = Cast<AKTPistolPickup>(EquippedPistol);
+
+	if (!IsValid(Pistol)) return;
+
+	const FVector TraceStart = Pistol->GetMuzzleLocation();
+	const FVector TraceDirection = Pistol->GetMuzzleForwardVector();
+	const FVector TraceEnd = TraceStart + TraceDirection * FireRange;
+
+	FHitResult HitResult;
+
+	// 세 번째 인자인 this로 플레이어 자신을 무시
+	FCollisionQueryParams QueryParams(
+		SCENE_QUERY_STAT(PistolFireTrace),
+		true,
+		this
+	);
+
+	// 장착된 권총도 무시
+	QueryParams.AddIgnoredActor(Pistol);
+
+	const bool bHit =
+		World->LineTraceSingleByChannel(
+			HitResult,
+			TraceStart,
+			TraceEnd,
+			ECC_Visibility,
+			QueryParams
+		);
+
+	const FVector DebugEnd = bHit ? HitResult.ImpactPoint : TraceEnd;
+
+	DrawDebugLine(
+		World,
+		TraceStart,
+		DebugEnd,
+		bHit ? FColor::Green : FColor::Red,
+		false,
+		1.0f,
+		0,
+		1.5f
+	);
+
+	if (bHit)
+	{
+		DrawDebugSphere(
+			World,
+			HitResult.ImpactPoint,
+			8.0f,
+			12,
+			FColor::Yellow,
+			false,
+			1.0f
+		);
+	}
+
+	AActor* HitActor = bHit ? HitResult.GetActor() : nullptr;
+
+	if (IsValid(HitActor) && GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(
+			20,
+			1.5f,
+			FColor::Cyan,
+			FString::Printf(
+				TEXT("명중: %s"),
+				*HitActor->GetName()
+			)
+		);
+	}
 }

@@ -121,6 +121,7 @@ protected:
 	void StopAiming();
 	void Fire();
 	void StopFiring();
+	void PerformFireTrace();
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon")
 	bool bIsAiming = false;
@@ -133,4 +134,8 @@ protected:
 	float FireAnimationDuration = 0.3f;
 
 	FTimerHandle FireAnimationTimerHandle;
+	
+	// 권총의 최대 사거리
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
+	float FireRange = 10000.0f;
 };
