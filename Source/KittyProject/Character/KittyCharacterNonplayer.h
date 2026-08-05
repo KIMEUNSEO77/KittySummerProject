@@ -26,9 +26,9 @@ public:
 		return bPatrolEnabled;
 	}
 	
-	const TArray<TObjectPtr<ATargetPoint>>& GetTargetPoints() const
+	const TArray<TObjectPtr<ATargetPoint>>& GetPatrolPoints() const
 	{
-		return PatrolPoint;
+		return PatrolPoints;
 	}
 	
 protected:
@@ -47,5 +47,5 @@ private:
 	bool bPatrolEnabled;
 	
 	UPROPERTY(EditAnywhere, Category = AI)
-	TArray<TObjectPtr<ATargetPoint>> PatrolPoint;
+	TArray<TObjectPtr<ATargetPoint>> PatrolPoints;
 };
