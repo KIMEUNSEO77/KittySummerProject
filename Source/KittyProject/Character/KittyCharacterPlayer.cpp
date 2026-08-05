@@ -17,6 +17,8 @@
 #include "Engine/Engine.h"
 #include "Engine/OverlapResult.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Animation/AnimInstance.h"
+#include "Animation/AnimMontage.h"
 
 AKittyCharacterPlayer::AKittyCharacterPlayer()
 {
@@ -457,17 +459,24 @@ void AKittyCharacterPlayer::StopAiming()
 
 void AKittyCharacterPlayer::Fire()
 {
-	// 총이 없으면 발사 불가능
-	if (!bHasPistol)
+	if (!bHasPistol) return;
+	if (!bIsAiming) return;
+	
+	if (!IsValid(PistolFireMontage))
 	{
+		UE_LOG(LogTemp, Warning, TEXT("PistolFireMontage가 지정되지 않았습니다."));
+
 		return;
 	}
 
-	// 조준 중이 아니면 발사 불가능
-	if (!bIsAiming)
-	{
-		return;
-	}
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+	if (!IsValid(AnimInstance)) return;
+
+	// 현재 발사 Montage가 재생 중이라면 중복 실행 방지
+	if (AnimInstance->Montage_IsPlaying(PistolFireMontage)) return;
+
+	AnimInstance->Montage_Play(PistolFireMontage);
 
 	if (GEngine)
 	{
@@ -475,7 +484,7 @@ void AKittyCharacterPlayer::Fire()
 			11,
 			1.0f,
 			FColor::Red,
-			TEXT("발사 입력 성공")
+			TEXT("발사 애니메이션 실행")
 		);
 	}
 }

@@ -117,6 +117,10 @@ protected:
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Weapon")
 	TObjectPtr<class AActor> EquippedPistol;
 	
+	// 권총 발사 애니메이션 Montage
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Animation")
+	TObjectPtr<class UAnimMontage> PistolFireMontage;
+	
 	void StartAiming();
 	void StopAiming();
 	void Fire();
