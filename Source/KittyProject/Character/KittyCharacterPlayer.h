@@ -106,6 +106,8 @@ public:
 	// 권총 Actor를 플레이어 손에 장착
 	bool AcquirePistol(class AActor* PistolActor);
 	
+	bool IsAiming() const { return bIsAiming;}
+	
 protected:
 	// 권총 보유 여부
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon")

@@ -38,6 +38,7 @@ void UKittyAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		if (AKittyCharacterPlayer* Player = Cast<AKittyCharacterPlayer>(Owner))
 		{
 			bIsJumping = Player->bIsJumping;
+			bIsAiming = Player->IsAiming();
 		}
 	}
 }
