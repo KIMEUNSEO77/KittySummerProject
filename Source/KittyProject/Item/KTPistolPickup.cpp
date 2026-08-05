@@ -5,6 +5,9 @@
 #include "Character/KittyCharacterPlayer.h"
 #include "Engine/Engine.h"
 
+#include "Mission/KTMissionSubsystem.h"
+#include "GameplayTagContainer.h"
+
 AKTPistolPickup::AKTPistolPickup()
 {
 	InteractionText = FText::FromString(TEXT("[F] 총 획득하기"));
@@ -24,6 +27,20 @@ void AKTPistolPickup::Interact_Implementation(AActor* Interactor)
 	if (!bAcquired)
 	{
 		return;
+	}
+	
+	if (UKTMissionSubsystem* MissionSubsystem =
+	UKTMissionSubsystem::Get(this))
+	{
+		const FGameplayTag PistolAcquiredTag =
+			FGameplayTag::RequestGameplayTag(
+				FName("Mission.Event.Item.Pistol.Acquired")
+			);
+
+		MissionSubsystem->BroadcastMissionEvent(
+			PistolAcquiredTag,
+			Interactor
+		);
 	}
 
 	if (GEngine)
