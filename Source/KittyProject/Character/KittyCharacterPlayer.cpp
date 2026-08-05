@@ -81,6 +81,18 @@ AKittyCharacterPlayer::AKittyCharacterPlayer()
 		InteractionAction = InputActionInteractionRef.Object;
 	}
 	
+	static ConstructorHelpers::FObjectFinder<UInputAction> InputActionAimRef(TEXT("/Game/MyInput/Input/Actions/IA_Aim.IA_Aim"));
+	if (InputActionAimRef.Succeeded())
+	{
+		AimAction = InputActionAimRef.Object;
+	}
+
+	static ConstructorHelpers::FObjectFinder<UInputAction> InputActionFireRef(TEXT("/Game/MyInput/Input/Actions/IA_Fire.IA_Fire"));
+	if (InputActionFireRef.Succeeded())
+	{
+		FireAction = InputActionFireRef.Object;
+	}
+	
 	CurrentCharacterControlType = ECharacterControlType::Shoulder;
 }
 
@@ -114,6 +126,10 @@ void AKittyCharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInp
 	EnhancedInputComponent->BindAction(MouseLookAction,ETriggerEvent::Triggered,this,&AKittyCharacterPlayer::ShoulderLook);
 	
 	EnhancedInputComponent->BindAction(InteractionAction,ETriggerEvent::Started,this,&AKittyCharacterPlayer::Interact);
+	
+	EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Started, this, &AKittyCharacterPlayer::StartAiming);
+	EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Completed, this, &AKittyCharacterPlayer::StopAiming);
+	EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Started, this, &AKittyCharacterPlayer::Fire);
 }
 
 void AKittyCharacterPlayer::ChangeCharacterControl()
@@ -401,4 +417,65 @@ bool AKittyCharacterPlayer::AcquirePistol(class AActor* PistolActor)
 	bHasPistol = true;
 
 	return true;
+}
+
+void AKittyCharacterPlayer::StartAiming()
+{
+	// 권총을 획득하지 않았다면 조준할 수 없음
+	if (!bHasPistol)
+	{
+		return;
+	}
+
+	bIsAiming = true;
+
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(
+			10,
+			2.0f,
+			FColor::Green,
+			TEXT("조준 시작")
+		);
+	}
+}
+
+void AKittyCharacterPlayer::StopAiming()
+{
+	bIsAiming = false;
+
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(
+			10,
+			2.0f,
+			FColor::White,
+			TEXT("조준 종료")
+		);
+	}
+}
+
+void AKittyCharacterPlayer::Fire()
+{
+	// 총이 없으면 발사 불가능
+	if (!bHasPistol)
+	{
+		return;
+	}
+
+	// 조준 중이 아니면 발사 불가능
+	if (!bIsAiming)
+	{
+		return;
+	}
+
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(
+			11,
+			1.0f,
+			FColor::Red,
+			TEXT("발사 입력 성공")
+		);
+	}
 }
