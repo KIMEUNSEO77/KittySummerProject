@@ -14,6 +14,16 @@
 class UAnimMontage;
 class ATargetPoint;
  
+UENUM(BlueprintType)
+enum class EKittyDeathDirection : uint8
+{
+	None  UMETA(DisplayName = "None"),
+	Front UMETA(DisplayName = "Front"),
+	Back  UMETA(DisplayName = "Back"),
+	Left  UMETA(DisplayName = "Left"),
+	Right UMETA(DisplayName = "Right")
+};
+
 UCLASS()
 class KITTYPROJECT_API AKittyCharacterNonplayer : public AKittyCharacterBase, public IKittyCharacterAIInterface
 {
@@ -61,9 +71,12 @@ private:
 	//순찰 위치를 저장하는 배열
 	UPROPERTY(EditAnywhere, Category = AI)
 	TArray<TObjectPtr<ATargetPoint>> PatrolPoints;
-	//죽었는지 판단하는 값
-	UPROPERTY(EditAnywhere, Category = AI)
+	//죽었는지 판단
+	UPROPERTY(VisibleInstanceOnly, Blueprint, Category = "Debug|Death",meta = (AllowPrivateAccess = "true"))
 	bool bIsDead;
+	//죽은 상태를 디버그하기위한 변수
+	UPROPERTY(VisibleInstanceOnly,BlueprintReadOnly,Category = "Debug|Death", meta = (AllowPrivateAccess = "true"))
+	EKittyDeathDirection DeathDirection = EKittyDeathDirection::None;
 	//각 방향별 죽는 몽타주
 	UPROPERTY(EditDefaultsOnly, Category = "Animation|Death")
 	TObjectPtr<UAnimMontage> BackDeathMontage;
@@ -79,9 +92,10 @@ private:
 
 
 private:
+	//죽는 방향 선택
+	EKittyDeathDirection CalculateDeathDirection(AController* InstigatedBy,AActor* DamageCauser) const;
 	//죽을때 재생할 몽타주 선택
-	UAnimMontage* SelectDeathMontage(AController* InstigatedBy,
-		AActor* DamageCauser) const;
+	UAnimMontage* GetDeathMontage(EKittyDeathDirection Direction) const;
 	//선택된 몽타주로 죽는 모션 실행.
 	void Die(UAnimMontage* DeathMontage);
 };

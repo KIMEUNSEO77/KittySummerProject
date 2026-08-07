@@ -29,14 +29,14 @@ void AKittyCharacterNonplayer::PostInitializeComponents()
 void AKittyCharacterNonplayer::OnDamaged(AActor* DamageActor, float Damage, const UDamageType* DamageType,
 	AController* InstigatedBy, AActor* DamageCauser)
 {
-	if (bIsDead||Damage<=0.0f)
+	if (bIsDead || Damage <= 0.0f)
 	{
 		return;
 	}
-	
-	UAnimMontage* DeathMontage = SelectDeathMontage(InstigatedBy, DamageCauser);
-	
-	Die(DeathMontage);
+
+	DeathDirection = CalculateDeathDirection(InstigatedBy, DamageCauser);
+
+	Die(GetDeathMontage(DeathDirection));
 }
 
 float AKittyCharacterNonplayer::GetAIPatrolRadius()
@@ -59,34 +59,59 @@ float AKittyCharacterNonplayer::GetAITurnSpeed()
 	return 500.0f;
 }
 
-UAnimMontage* AKittyCharacterNonplayer::SelectDeathMontage(AController* InstigatedBy, AActor* DamageCauser) const
+
+EKittyDeathDirection AKittyCharacterNonplayer::CalculateDeathDirection(AController* InstigatedBy,
+	AActor* DamageCauser) const
 {
 	const AActor* Attacker = nullptr;
-	
+
 	if (InstigatedBy)
 	{
 		Attacker = InstigatedBy->GetPawn();
 	}
+
 	if (!IsValid(Attacker))
 	{
 		Attacker = DamageCauser;
 	}
-	
+
 	if (!IsValid(Attacker))
 	{
-		return FrontDeathMontage;
+		return EKittyDeathDirection::Front;
 	}
-	
-	const FVector WorldDirection = Attacker->GetActorLocation() - GetActorLocation();
-	
-	const FVector LocalDirection = GetActorTransform().InverseTransformVectorNoScale(WorldDirection).GetSafeNormal2D();
-	
-	if (FMath::Abs(LocalDirection.X)>=FMath::Abs(LocalDirection.Y))
+
+	const FVector WorldDirection =
+		Attacker->GetActorLocation() - GetActorLocation();
+
+	const FVector LocalDirection =GetActorTransform().InverseTransformVectorNoScale(WorldDirection).GetSafeNormal2D();
+
+	if (FMath::Abs(LocalDirection.X) >= FMath::Abs(LocalDirection.Y))
 	{
-		return LocalDirection.X>=0.0f ? FrontDeathMontage : BackDeathMontage;
+		return LocalDirection.X >= 0.0f ? EKittyDeathDirection::Front : EKittyDeathDirection::Back;
 	}
-	
-	return LocalDirection.Y >= 0.0f ? RightDeathMontage : LeftDeathMontage;
+
+	return LocalDirection.Y >= 0.0f ? EKittyDeathDirection::Right : EKittyDeathDirection::Left;
+}
+
+UAnimMontage* AKittyCharacterNonplayer::GetDeathMontage(EKittyDeathDirection Direction) const
+{
+	switch (Direction)
+	{
+	case EKittyDeathDirection::Front:
+		return FrontDeathMontage;
+
+	case EKittyDeathDirection::Back:
+		return BackDeathMontage;
+
+	case EKittyDeathDirection::Left:
+		return LeftDeathMontage;
+
+	case EKittyDeathDirection::Right:
+		return RightDeathMontage;
+
+	default:
+		return nullptr;
+	}
 }
 
 void AKittyCharacterNonplayer::Die(UAnimMontage* DeathMontage)
