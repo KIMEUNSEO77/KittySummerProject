@@ -6,6 +6,7 @@
 #include "Animation/AnimMontage.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "UObject/ConstructorHelpers.h"
 
 
 AKittyCharacterNonplayer::AKittyCharacterNonplayer()
@@ -15,6 +16,33 @@ AKittyCharacterNonplayer::AKittyCharacterNonplayer()
 	AIControllerClass = AKittyAIController::StaticClass();
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 	
+	static ConstructorHelpers::FObjectFinder<UAnimMontage>FrontDeathMontageRef(TEXT("/Game/Animations/AM_FrontDeath.AM_FrontDeath"));
+
+	if (FrontDeathMontageRef.Succeeded())
+	{
+		FrontDeathMontage = FrontDeathMontageRef.Object;
+	}
+
+	static ConstructorHelpers::FObjectFinder<UAnimMontage>BackDeathMontageRef(TEXT("/Game/Animations/AM_BackDeath.AM_BackDeath"));
+
+	if (BackDeathMontageRef.Succeeded())
+	{
+		BackDeathMontage = BackDeathMontageRef.Object;
+	}
+
+	static ConstructorHelpers::FObjectFinder<UAnimMontage>LeftDeathMontageRef(TEXT("/Game/Animations/AM_LeftDeath.AM_LeftDeath"));
+
+	if (LeftDeathMontageRef.Succeeded())
+	{
+		LeftDeathMontage = LeftDeathMontageRef.Object;
+	}
+
+	static ConstructorHelpers::FObjectFinder<UAnimMontage>RightDeathMontageRef(TEXT("/Game/Animations/AM_RightDeath.AM_RightDeath"));
+
+	if (RightDeathMontageRef.Succeeded())
+	{
+		RightDeathMontage = RightDeathMontageRef.Object;
+	}
 }
 
 void AKittyCharacterNonplayer::PostInitializeComponents()
@@ -140,4 +168,15 @@ void AKittyCharacterNonplayer::Die(UAnimMontage* DeathMontage)
 	{
 		PlayAnimMontage(DeathMontage);
 	}
+}
+
+void AKittyCharacterNonplayer::DebugKill()
+{
+	if (bIsDead)
+	{
+		return;
+	}
+	DeathDirection = DebugDirection;
+	
+	Die(GetDeathMontage(DeathDirection));
 }

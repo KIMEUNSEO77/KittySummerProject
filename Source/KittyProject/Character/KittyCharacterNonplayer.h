@@ -72,22 +72,22 @@ private:
 	UPROPERTY(EditAnywhere, Category = AI)
 	TArray<TObjectPtr<ATargetPoint>> PatrolPoints;
 	//죽었는지 판단
-	UPROPERTY(VisibleInstanceOnly, Blueprint, Category = "Debug|Death",meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, Category = "Debug|Death",meta = (AllowPrivateAccess = "true"))
 	bool bIsDead;
 	//죽은 상태를 디버그하기위한 변수
 	UPROPERTY(VisibleInstanceOnly,BlueprintReadOnly,Category = "Debug|Death", meta = (AllowPrivateAccess = "true"))
 	EKittyDeathDirection DeathDirection = EKittyDeathDirection::None;
 	//각 방향별 죽는 몽타주
-	UPROPERTY(EditDefaultsOnly, Category = "Animation|Death")
+	UPROPERTY(VisibleDefaultsOnly, Category = "Animation|Death")
 	TObjectPtr<UAnimMontage> BackDeathMontage;
 	
-	UPROPERTY(EditDefaultsOnly, Category = "Animation|Death")
+	UPROPERTY(VisibleDefaultsOnly, Category = "Animation|Death")
 	TObjectPtr<UAnimMontage> FrontDeathMontage;
 	
-	UPROPERTY(EditDefaultsOnly, Category = "Animation|Death")
+	UPROPERTY(VisibleDefaultsOnly, Category = "Animation|Death")
 	TObjectPtr<UAnimMontage> LeftDeathMontage;
 	
-	UPROPERTY(EditDefaultsOnly, Category = "Animation|Death")
+	UPROPERTY(VisibleDefaultsOnly, Category = "Animation|Death")
 	TObjectPtr<UAnimMontage> RightDeathMontage;
 
 
@@ -98,4 +98,11 @@ private:
 	UAnimMontage* GetDeathMontage(EKittyDeathDirection Direction) const;
 	//선택된 몽타주로 죽는 모션 실행.
 	void Die(UAnimMontage* DeathMontage);
+	
+private:
+	UPROPERTY(EditAnywhere, Category = "Debug|Death")
+	EKittyDeathDirection DebugDirection = EKittyDeathDirection::Front;
+	
+	UFUNCTION(CallInEditor, Category = "Debug|Death")
+	void DebugKill();
 };
