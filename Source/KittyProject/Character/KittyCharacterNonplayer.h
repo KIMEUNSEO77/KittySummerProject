@@ -10,8 +10,9 @@
 /**
  * 
  */
- 
- class ATargetPoint;
+
+class UAnimMontage;
+class ATargetPoint;
  
 UCLASS()
 class KITTYPROJECT_API AKittyCharacterNonplayer : public AKittyCharacterBase, public IKittyCharacterAIInterface
@@ -31,9 +32,21 @@ public:
 		return PatrolPoints;
 	}
 	
+	bool IsDead() const
+	{
+		return bIsDead;
+	}
+	
 protected:
 	virtual void PostInitializeComponents() override;
 	
+	UFUNCTION()
+	void OnDamaged(AActor* DamageActor,
+		float Damage, 
+		const UDamageType* DamageType, 
+		AController* InstigatedBy, 
+		AActor* DamageCauser);
+
 protected:
 	virtual float GetAIPatrolRadius() override;
 	virtual float GetAIDetectRange() override;
@@ -42,10 +55,33 @@ protected:
 	
 private:
 	
-	//순찰 경로 지정을 위한 값
+	//순찰가능 여부를 판단
 	UPROPERTY(EditAnywhere, Category = AI)
 	bool bPatrolEnabled;
-	
+	//순찰 위치를 저장하는 배열
 	UPROPERTY(EditAnywhere, Category = AI)
 	TArray<TObjectPtr<ATargetPoint>> PatrolPoints;
+	//죽었는지 판단하는 값
+	UPROPERTY(EditAnywhere, Category = AI)
+	bool bIsDead;
+	//각 방향별 죽는 몽타주
+	UPROPERTY(EditDefaultsOnly, Category = "Animation|Death")
+	TObjectPtr<UAnimMontage> BackDeathMontage;
+	
+	UPROPERTY(EditDefaultsOnly, Category = "Animation|Death")
+	TObjectPtr<UAnimMontage> FrontDeathMontage;
+	
+	UPROPERTY(EditDefaultsOnly, Category = "Animation|Death")
+	TObjectPtr<UAnimMontage> LeftDeathMontage;
+	
+	UPROPERTY(EditDefaultsOnly, Category = "Animation|Death")
+	TObjectPtr<UAnimMontage> RightDeathMontage;
+
+
+private:
+	//죽을때 재생할 몽타주 선택
+	UAnimMontage* SelectDeathMontage(AController* InstigatedBy,
+		AActor* DamageCauser) const;
+	//선택된 몽타주로 죽는 모션 실행.
+	void Die(UAnimMontage* DeathMontage);
 };
