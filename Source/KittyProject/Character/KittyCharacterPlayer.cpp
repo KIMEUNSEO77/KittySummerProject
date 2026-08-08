@@ -20,10 +20,15 @@
 #include "TimerManager.h"
 #include "DrawDebugHelpers.h"
 #include "Item/KTPistolPickup.h"
+#include "Inventory/KTInventoryComponent.h"
+#include "Player/KittyPlayerController.h"
 
 AKittyCharacterPlayer::AKittyCharacterPlayer()
 {
 	PrimaryActorTick.bCanEverTick = true;
+	InventoryComponent = CreateDefaultSubobject<UKTInventoryComponent>(
+		TEXT("InventoryComponent")
+	);
 	
 	// Camera
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
@@ -97,6 +102,13 @@ AKittyCharacterPlayer::AKittyCharacterPlayer()
 	}
 	
 	CurrentCharacterControlType = ECharacterControlType::Shoulder;
+	
+	static ConstructorHelpers::FObjectFinder<UInputAction> InputActionInventoryRef(TEXT("/Game/MyInput/Input/Actions/IA_Inventory.IA_Inventory"));
+
+	if (InputActionInventoryRef.Succeeded())
+	{
+		InventoryAction = InputActionInventoryRef.Object;
+	}
 }
 
 void AKittyCharacterPlayer::BeginPlay()
@@ -133,6 +145,8 @@ void AKittyCharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInp
 	EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Started, this, &AKittyCharacterPlayer::StartAiming);
 	EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Completed, this, &AKittyCharacterPlayer::StopAiming);
 	EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Started, this, &AKittyCharacterPlayer::Fire);
+	EnhancedInputComponent->BindAction(InventoryAction,ETriggerEvent::Started,this,&AKittyCharacterPlayer::ToggleInventory);
+
 }
 
 void AKittyCharacterPlayer::ChangeCharacterControl()
@@ -564,5 +578,16 @@ void AKittyCharacterPlayer::PerformFireTrace()
 				*HitActor->GetName()
 			)
 		);
+	}
+}
+
+void AKittyCharacterPlayer::ToggleInventory()
+{
+	AKittyPlayerController* KittyPlayerController =
+		Cast<AKittyPlayerController>(GetController());
+
+	if (KittyPlayerController)
+	{
+		KittyPlayerController->ToggleInventory();
 	}
 }

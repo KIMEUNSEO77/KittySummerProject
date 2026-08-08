@@ -18,6 +18,12 @@ class KITTYPROJECT_API AKittyCharacterPlayer : public AKittyCharacterBase
 public:
 	AKittyCharacterPlayer();
 	
+	// 플레이어가 가진 인벤토리를 반환합니다.
+	class UKTInventoryComponent* GetInventoryComponent() const
+	{
+		return InventoryComponent;
+	}
+	
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
@@ -68,6 +74,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UInputAction> FireAction;
 	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UInputAction> InventoryAction;
+	
 	// 상호작용 입력 액션
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UInputAction> InteractionAction;
@@ -100,6 +109,7 @@ protected:
 	
 	// 현재 감지된 Actor와 상호작용
 	void Interact();
+	void ToggleInventory();
 	
 	// Pistol Section
 public:
@@ -138,4 +148,8 @@ protected:
 	// 권총의 최대 사거리
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
 	float FireRange = 10000.0f;
+	
+	// 카드키, 문서, 조사물 등을 저장하는 인벤토리
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory")
+	TObjectPtr<class UKTInventoryComponent> InventoryComponent;
 };
