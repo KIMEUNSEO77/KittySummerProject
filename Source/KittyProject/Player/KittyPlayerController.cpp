@@ -205,7 +205,7 @@ void AKittyPlayerController::OpenInventory()
 	AKittyCharacterPlayer* PlayerCharacter =
 		Cast<AKittyCharacterPlayer>(GetPawn());
 
-	if (!IsValid(Player) || !InventoryWidgetClass)
+	if (!IsValid(PlayerCharacter) || !InventoryWidgetClass)
 	{
 		return;
 	}
