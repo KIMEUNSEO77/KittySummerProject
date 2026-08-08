@@ -9,6 +9,9 @@
 #include "UI/KTObjectiveMarkerWidget.h"
 #include "Mission/KTMissionDataAsset.h"
 #include "TimerManager.h"
+#include "Character/KittyCharacterPlayer.h"
+#include "Inventory/KTInventoryComponent.h"
+#include "UI/KTInventoryWidget.h"
 
 void AKittyPlayerController::BeginPlay()
 {
@@ -177,4 +180,124 @@ void AKittyPlayerController::StartInitialMission()
 	}
 
 	MissionSubsystem->StartMission(InitialMission);
+}
+
+
+void AKittyPlayerController::ToggleInventory()
+{
+	if (bIsInventoryOpen)
+	{
+		CloseInventory();
+	}
+	else
+	{
+		OpenInventory();
+	}
+}
+
+void AKittyPlayerController::OpenInventory()
+{
+	if (!IsLocalController() || bIsInventoryOpen)
+	{
+		return;
+	}
+
+	AKittyCharacterPlayer* PlayerCharacter =
+		Cast<AKittyCharacterPlayer>(GetPawn());
+
+	if (!IsValid(Player) || !InventoryWidgetClass)
+	{
+		return;
+	}
+
+	if (!InventoryWidget)
+	{
+		InventoryWidget = CreateWidget<UKTInventoryWidget>(
+			this,
+			InventoryWidgetClass
+		);
+
+		if (!InventoryWidget)
+		{
+			return;
+		}
+
+		InventoryWidget->AddToViewport(20);
+	}
+
+	InventoryWidget->SetInventoryComponent(
+		PlayerCharacter->GetInventoryComponent()
+	);
+
+	InventoryWidget->SetVisibility(
+		ESlateVisibility::Visible
+	);
+
+	FInputModeGameAndUI InputMode;
+	InputMode.SetWidgetToFocus(
+		InventoryWidget->TakeWidget()
+	);
+
+	SetInputMode(InputMode);
+	bShowMouseCursor = true;
+
+	SetIgnoreMoveInput(true);
+	SetIgnoreLookInput(true);
+
+	// 인벤토리가 열린 동안 미션 HUD를 숨깁니다.
+	if (MissionTrackerWidget)
+	{
+		MissionTrackerWidget->SetVisibility(
+			ESlateVisibility::Collapsed
+		);
+	}
+
+	// 목적지 마커도 함께 숨깁니다.
+	if (ObjectiveMarkerWidget)
+	{
+		ObjectiveMarkerWidget->SetVisibility(
+			ESlateVisibility::Collapsed
+		);
+	}
+	
+	bIsInventoryOpen = true;
+}
+
+void AKittyPlayerController::CloseInventory()
+{
+	if (!bIsInventoryOpen)
+	{
+		return;
+	}
+
+	if (InventoryWidget)
+	{
+		InventoryWidget->SetVisibility(
+			ESlateVisibility::Collapsed
+		);
+	}
+
+	FInputModeGameOnly InputMode;
+	SetInputMode(InputMode);
+	bShowMouseCursor = false;
+
+	SetIgnoreMoveInput(false);
+	SetIgnoreLookInput(false);
+
+	// 게임 화면으로 돌아오면 미션 HUD를 다시 표시합니다.
+	if (MissionTrackerWidget)
+	{
+		MissionTrackerWidget->SetVisibility(
+			ESlateVisibility::Visible
+		);
+	}
+
+	if (ObjectiveMarkerWidget)
+	{
+		ObjectiveMarkerWidget->SetVisibility(
+			ESlateVisibility::Visible
+		);
+	}
+	
+	bIsInventoryOpen = false;
 }

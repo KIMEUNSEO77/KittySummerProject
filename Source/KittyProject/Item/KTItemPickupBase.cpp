@@ -5,6 +5,10 @@
 
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Character/KittyCharacterPlayer.h"
+#include "Inventory/KTInventoryComponent.h"
+#include "Inventory/KTItemDataAsset.h"
+#include "Mission/KTMissionSubsystem.h"
 
 // Sets default values
 AKTItemPickupBase::AKTItemPickupBase()
@@ -49,7 +53,43 @@ void AKTItemPickupBase::BeginPlay()
 
 void AKTItemPickupBase::Interact_Implementation(AActor* Interactor)
 {
-	// 권총, 출입증 등의 자식 클래스에서 실제 획득 처리를 구현
+	AKittyCharacterPlayer* Player =
+		Cast<AKittyCharacterPlayer>(Interactor);
+
+	if (!IsValid(Player) || !IsValid(ItemData))
+	{
+		return;
+	}
+
+	UKTInventoryComponent* Inventory =
+		Player->GetInventoryComponent();
+
+	if (!IsValid(Inventory))
+	{
+		return;
+	}
+
+	// 인벤토리에 정상적으로 들어간 경우에만
+	// 맵의 아이템을 삭제합니다.
+	if (!Inventory->AddItem(ItemData))
+	{
+		return;
+	}
+
+	// 이 아이템이 미션과 관련 있다면 완료 태그를 전송합니다.
+	if (ItemData->AcquiredEventTag.IsValid())
+	{
+		if (UKTMissionSubsystem* MissionSubsystem =
+			UKTMissionSubsystem::Get(this))
+		{
+			MissionSubsystem->BroadcastMissionEvent(
+				ItemData->AcquiredEventTag,
+				Interactor
+			);
+		}
+	}
+
+	Destroy();
 }
 
 FText AKTItemPickupBase::GetInteractionText_Implementation() const

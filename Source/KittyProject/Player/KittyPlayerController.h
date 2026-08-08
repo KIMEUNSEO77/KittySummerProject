@@ -10,7 +10,7 @@
 
 class UKTMissionTrackerWidget;
 class UKTMissionNotificationWidget;
-
+class UKTInventoryWidget;
 class UKTObjectiveMarkerWidget;
 class UKTMissionSubsystem;
 class UKTMissionDataAsset;
@@ -71,4 +71,30 @@ protected:
 		FText MissionTitle,
 		FMissionStep NextStep
 	);
+	
+public:
+	// 플레이어 입력으로 인벤토리를 열고 닫습니다.
+	UFUNCTION(BlueprintCallable, Category = "Inventory")
+	void ToggleInventory();
+
+	UFUNCTION(BlueprintCallable, Category = "Inventory")
+	void OpenInventory();
+
+	UFUNCTION(BlueprintCallable, Category = "Inventory")
+	void CloseInventory();
+
+	UFUNCTION(BlueprintPure, Category = "Inventory")
+	bool IsInventoryOpen() const
+	{
+		return bIsInventoryOpen;
+	}
+
+protected:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI|Inventory")
+	TSubclassOf<UKTInventoryWidget> InventoryWidgetClass;
+
+	UPROPERTY()
+	TObjectPtr<UKTInventoryWidget> InventoryWidget;
+
+	bool bIsInventoryOpen = false;
 };

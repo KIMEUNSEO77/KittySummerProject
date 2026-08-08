@@ -7,6 +7,7 @@
 #include "Interface//KTInteractableInterface.h"
 #include "KTItemPickupBase.generated.h"
 
+class UKTItemDataAsset;
 UCLASS()
 class KITTYPROJECT_API AKTItemPickupBase : public AActor, public IKTInteractableInterface
 {
@@ -37,5 +38,8 @@ public:
 	// 화면에 표시할 상호작용 문구
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Pickup|Interaction")
 	FText InteractionText;
-
+	
+	// 이 월드 액터가 획득 시 인벤토리에 넣을 아이템 정보
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Pickup|Item")
+	TObjectPtr<UKTItemDataAsset> ItemData;
 };
