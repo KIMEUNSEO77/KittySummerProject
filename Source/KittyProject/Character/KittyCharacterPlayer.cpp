@@ -22,6 +22,7 @@
 #include "Item/KTPistolPickup.h"
 #include "Inventory/KTInventoryComponent.h"
 #include "Player/KittyPlayerController.h"
+#include "Kismet/GameplayStatics.h"
 
 AKittyCharacterPlayer::AKittyCharacterPlayer()
 {
@@ -272,14 +273,8 @@ void AKittyCharacterPlayer::CheckForInteractable()
 	const FVector SearchLocation = GetActorLocation();
 	const float SearchRadius = InteractionDistance;
 
-	const bool bFoundActors = GetWorld()->OverlapMultiByObjectType(
-		OverlapResults,
-		SearchLocation,
-		FQuat::Identity,
-		ObjectQueryParams,
-		FCollisionShape::MakeSphere(SearchRadius),
-		QueryParams
-	);
+	const bool bFoundActors = GetWorld()->OverlapMultiByObjectType(OverlapResults, SearchLocation, FQuat::Identity, ObjectQueryParams,
+		FCollisionShape::MakeSphere(SearchRadius), QueryParams);
 
 	AActor* BestInteractable = nullptr;
 	float BestDistanceSquared = TNumericLimits<float>::Max();
@@ -296,8 +291,7 @@ void AKittyCharacterPlayer::CheckForInteractable()
 			}
 
 			// 상호작용 인터페이스가 없는 Actor는 제외
-			if (!Candidate->GetClass()->ImplementsInterface(
-				UKTInteractableInterface::StaticClass()))
+			if (!Candidate->GetClass()->ImplementsInterface(UKTInteractableInterface::StaticClass()))
 			{
 				continue;
 			}
@@ -313,9 +307,7 @@ void AKittyCharacterPlayer::CheckForInteractable()
 			}
 
 			const FVector DirectionToCandidate = ToCandidate.GetSafeNormal();
-
 			const FVector PlayerForward = GetActorForwardVector().GetSafeNormal2D();
-
 			const float ForwardDot = FVector::DotProduct(PlayerForward, DirectionToCandidate);
 
 			// 캐릭터 뒤쪽에 있는 아이템은 제외
@@ -339,17 +331,9 @@ void AKittyCharacterPlayer::CheckForInteractable()
 
 	if (IsValid(CurrentInteractable) && GEngine)
 	{
-		const FText PromptText =
-			IKTInteractableInterface::Execute_GetInteractionText(
-				CurrentInteractable
-			);
+		const FText PromptText = IKTInteractableInterface::Execute_GetInteractionText(CurrentInteractable);
 
-		GEngine->AddOnScreenDebugMessage(
-			1,
-			0.0f,
-			FColor::Yellow,
-			PromptText.ToString()
-		);
+		GEngine->AddOnScreenDebugMessage(1, 0.0f, FColor::Yellow, PromptText.ToString());
 	}
 }
 
@@ -402,12 +386,7 @@ bool AKittyCharacterPlayer::AcquirePistol(class AActor* PistolActor)
 	// 소켓 이름이 잘못되었을 경우 장착하지 않음
 	if (!CharacterMesh->DoesSocketExist(PistolSocketName))
 	{
-		UE_LOG(
-			LogTemp,
-			Warning,
-			TEXT("PistolSocket이 캐릭터 Mesh에 없습니다.")
-		);
-
+		UE_LOG(LogTemp, Warning, TEXT("PistolSocket이 캐릭터 Mesh에 없습니다."));
 		return false;
 	}
 
@@ -417,11 +396,7 @@ bool AKittyCharacterPlayer::AcquirePistol(class AActor* PistolActor)
 	// 플레이어가 권총 Actor의 소유자가 됨
 	PistolActor->SetOwner(this);
 
-	const bool bAttached = PistolActor->AttachToComponent(
-		CharacterMesh,
-		FAttachmentTransformRules::SnapToTargetNotIncludingScale,
-		PistolSocketName
-	);
+	const bool bAttached = PistolActor->AttachToComponent(CharacterMesh, FAttachmentTransformRules::SnapToTargetNotIncludingScale, PistolSocketName);
 
 	if (!bAttached)
 	{
@@ -448,12 +423,7 @@ void AKittyCharacterPlayer::StartAiming()
 
 	if (GEngine)
 	{
-		GEngine->AddOnScreenDebugMessage(
-			10,
-			2.0f,
-			FColor::Green,
-			TEXT("조준 시작")
-		);
+		GEngine->AddOnScreenDebugMessage(10, 2.0f, FColor::Green, TEXT("조준 시작"));
 	}
 }
 
@@ -468,12 +438,7 @@ void AKittyCharacterPlayer::StopAiming()
 
 	if (GEngine)
 	{
-		GEngine->AddOnScreenDebugMessage(
-			10,
-			2.0f,
-			FColor::White,
-			TEXT("조준 종료")
-		);
+		GEngine->AddOnScreenDebugMessage(10, 2.0f, FColor::White, TEXT("조준 종료"));
 	}
 }
 
@@ -490,13 +455,7 @@ void AKittyCharacterPlayer::Fire()
 	// 실제 발사 판정
 	PerformFireTrace();
 
-	GetWorldTimerManager().SetTimer(
-		FireAnimationTimerHandle,
-		this,
-		&AKittyCharacterPlayer::StopFiring,
-		FireAnimationDuration,
-		false
-	);
+	GetWorldTimerManager().SetTimer(FireAnimationTimerHandle, this, &AKittyCharacterPlayer::StopFiring, FireAnimationDuration, false);
 }
 
 void AKittyCharacterPlayer::StopFiring()
@@ -519,72 +478,47 @@ void AKittyCharacterPlayer::PerformFireTrace()
 	const FVector TraceEnd = TraceStart + TraceDirection * FireRange;
 
 	FHitResult HitResult;
-
-	// 세 번째 인자인 this로 플레이어 자신을 무시
-	FCollisionQueryParams QueryParams(
-		SCENE_QUERY_STAT(PistolFireTrace),
-		true,
-		this
-	);
+	
+	FCollisionQueryParams QueryParams(SCENE_QUERY_STAT(PistolFireTrace), true, this);
 
 	// 장착된 권총도 무시
 	QueryParams.AddIgnoredActor(Pistol);
 
-	const bool bHit =
-		World->LineTraceSingleByChannel(
-			HitResult,
-			TraceStart,
-			TraceEnd,
-			ECC_Visibility,
-			QueryParams
-		);
+	const bool bHit = World->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, ECC_Visibility, QueryParams);
 
 	const FVector DebugEnd = bHit ? HitResult.ImpactPoint : TraceEnd;
 
-	DrawDebugLine(
-		World,
-		TraceStart,
-		DebugEnd,
-		bHit ? FColor::Green : FColor::Red,
-		false,
-		1.0f,
-		0,
-		1.5f
-	);
+	DrawDebugLine(World, TraceStart, DebugEnd, bHit ? FColor::Green : FColor::Red, false, 1.0f, 0, 1.5f);
 
 	if (bHit)
 	{
-		DrawDebugSphere(
-			World,
-			HitResult.ImpactPoint,
-			8.0f,
-			12,
-			FColor::Yellow,
-			false,
-			1.0f
-		);
+		DrawDebugSphere(World,HitResult.ImpactPoint,8.0f,12,FColor::Yellow,false,1.0f);
 	}
 
 	AActor* HitActor = bHit ? HitResult.GetActor() : nullptr;
+	
+	if (IsValid(HitActor))
+	{
+		UGameplayStatics::ApplyPointDamage(
+			HitActor,                  // 총에 맞은 Actor
+			1.0f,                      // 데미지
+			TraceDirection,            // 총알 진행 방향
+			HitResult,                 // 충돌 결과
+			GetController(),           // 공격한 플레이어의 Controller
+			Pistol,                    // 데미지를 발생시킨 권총
+			UDamageType::StaticClass()
+		);
+	}
 
 	if (IsValid(HitActor) && GEngine)
 	{
-		GEngine->AddOnScreenDebugMessage(
-			20,
-			1.5f,
-			FColor::Cyan,
-			FString::Printf(
-				TEXT("명중: %s"),
-				*HitActor->GetName()
-			)
-		);
+		GEngine->AddOnScreenDebugMessage(20, 1.5f, FColor::Cyan, FString::Printf(TEXT("명중: %s"), *HitActor->GetName()));
 	}
 }
 
 void AKittyCharacterPlayer::ToggleInventory()
 {
-	AKittyPlayerController* KittyPlayerController =
-		Cast<AKittyPlayerController>(GetController());
+	AKittyPlayerController* KittyPlayerController = Cast<AKittyPlayerController>(GetController());
 
 	if (KittyPlayerController)
 	{
