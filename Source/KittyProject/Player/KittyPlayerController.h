@@ -14,6 +14,7 @@ class UKTInventoryWidget;
 class UKTObjectiveMarkerWidget;
 class UKTMissionSubsystem;
 class UKTMissionDataAsset;
+
 /**
  * 
  */
@@ -88,13 +89,25 @@ public:
 	{
 		return bIsInventoryOpen;
 	}
+	
+	// 현재 상호작용 대상이 목적지 마커의 대상일 때,
+	// 마커를 F 상호작용 UI로 전환합니다.
+	void ShowObjectiveInteractionPrompt(
+		AActor* InteractableActor,
+		const FText& PromptText
+	);
 
+	// 일반 목적지 마커 상태로 되돌립니다.
+	void HideObjectiveInteractionPrompt();
+
+	
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI|Inventory")
 	TSubclassOf<UKTInventoryWidget> InventoryWidgetClass;
 
 	UPROPERTY()
 	TObjectPtr<UKTInventoryWidget> InventoryWidget;
+	
 
 	bool bIsInventoryOpen = false;
 };

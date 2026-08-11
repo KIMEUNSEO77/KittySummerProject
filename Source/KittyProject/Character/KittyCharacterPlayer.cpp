@@ -24,6 +24,7 @@
 #include "Player/KittyPlayerController.h"
 #include "Kismet/GameplayStatics.h"
 #include "Camera/CameraShakeBase.h"
+#include "Item/KTItemPickupBase.h"
 
 AKittyCharacterPlayer::AKittyCharacterPlayer()
 {
@@ -263,6 +264,7 @@ void AKittyCharacterPlayer::JumpEnd()
 
 void AKittyCharacterPlayer::CheckForInteractable()
 {
+	
 	TArray<FOverlapResult> OverlapResults;
 
 	FCollisionObjectQueryParams ObjectQueryParams;
@@ -330,12 +332,31 @@ void AKittyCharacterPlayer::CheckForInteractable()
 
 	CurrentInteractable = BestInteractable;
 
-	if (IsValid(CurrentInteractable) && GEngine)
-	{
-		const FText PromptText = IKTInteractableInterface::Execute_GetInteractionText(CurrentInteractable);
+	AKittyPlayerController* KittyPlayerController =
+		Cast<AKittyPlayerController>(GetController());
 
-		GEngine->AddOnScreenDebugMessage(1, 0.0f, FColor::Yellow, PromptText.ToString());
+	if (!KittyPlayerController)
+	{
+		return;
 	}
+
+	if (IsValid(CurrentInteractable))
+	{
+		const FText PromptText =
+			IKTInteractableInterface::Execute_GetInteractionText(
+				CurrentInteractable
+			);
+
+		KittyPlayerController->ShowObjectiveInteractionPrompt(
+			CurrentInteractable,
+			PromptText
+		);
+	}
+	else
+	{
+		KittyPlayerController->HideObjectiveInteractionPrompt();
+	}
+	
 }
 
 void AKittyCharacterPlayer::Interact()
@@ -355,11 +376,7 @@ void AKittyCharacterPlayer::Interact()
 	// 인터페이스를 통해 대상의 상호작용 함수 호출
 	IKTInteractableInterface::Execute_Interact(CurrentInteractable, this);
 
-	// 동작 확인을 위한 임시 메시지
-	if (GEngine)
-	{
-		GEngine->AddOnScreenDebugMessage(3, 2.0f, FColor::Green, TEXT("상호작용 실행 성공"));
-	}
+
 }
 
 bool AKittyCharacterPlayer::AcquirePistol(class AActor* PistolActor)

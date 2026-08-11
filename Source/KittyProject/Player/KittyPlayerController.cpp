@@ -13,6 +13,7 @@
 #include "Inventory/KTInventoryComponent.h"
 #include "UI/KTInventoryWidget.h"
 
+
 void AKittyPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
@@ -103,6 +104,7 @@ void AKittyPlayerController::BeginPlay()
 			);
 		}
 	}
+
 }
 
 void AKittyPlayerController::HandleMissionNextStepQueued(
@@ -300,4 +302,34 @@ void AKittyPlayerController::CloseInventory()
 	}
 	
 	bIsInventoryOpen = false;
+}
+void AKittyPlayerController::ShowObjectiveInteractionPrompt(
+	AActor* InteractableActor,
+	const FText& PromptText)
+{
+	if (!ObjectiveMarkerWidget)
+	{
+		return;
+	}
+
+	const bool bIsCurrentMissionTarget =
+		ObjectiveMarkerWidget->IsTrackingActor(
+			InteractableActor
+		);
+
+	ObjectiveMarkerWidget->SetInteractionPrompt(
+		bIsCurrentMissionTarget,
+		PromptText
+	);
+}
+
+void AKittyPlayerController::HideObjectiveInteractionPrompt()
+{
+	if (ObjectiveMarkerWidget)
+	{
+		ObjectiveMarkerWidget->SetInteractionPrompt(
+			false,
+			FText::GetEmpty()
+		);
+	}
 }

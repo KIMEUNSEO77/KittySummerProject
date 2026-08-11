@@ -8,6 +8,8 @@
 #include "KTItemPickupBase.generated.h"
 
 class UKTItemDataAsset;
+class UWidgetComponent;
+
 UCLASS()
 class KITTYPROJECT_API AKTItemPickupBase : public AActor, public IKTInteractableInterface
 {
@@ -23,7 +25,7 @@ public:
 	virtual FText GetInteractionText_Implementation() const override;
 	
 	void SetPickupInteractionEnabled(bool bEnabled); // 픽업 활성화 함수
-
+	
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

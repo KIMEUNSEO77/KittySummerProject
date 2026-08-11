@@ -10,6 +10,7 @@
 #include "Inventory/KTItemDataAsset.h"
 #include "Mission/KTMissionSubsystem.h"
 
+
 // Sets default values
 AKTItemPickupBase::AKTItemPickupBase()
 {
@@ -40,9 +41,9 @@ AKTItemPickupBase::AKTItemPickupBase()
 	// 메시 자체의 충돌은 끄고, Line Trace 감지는 위의 Sphere Collision이 담당
 	PickupMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	PickupMesh->SetGenerateOverlapEvents(false);
-
+	
 	// 기본 안내 문구
-	InteractionText = FText::FromString(TEXT("[F] 아이템 획득하기"));
+	InteractionText = FText::FromString(TEXT("아이템 획득하기"));
 }
 
 // Called when the game starts or when spawned

@@ -17,7 +17,7 @@
 
 AKTPistolPickup::AKTPistolPickup()
 {
-	InteractionText = FText::FromString(TEXT("[F] 총 획득하기"));
+	InteractionText = FText::FromString(TEXT("총 획득하기"));
 	
 	MuzzlePoint = CreateDefaultSubobject<USceneComponent>(TEXT("MuzzlePoint"));
 	MuzzlePoint->SetupAttachment(PickupMesh);
