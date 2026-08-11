@@ -421,11 +421,6 @@ void AKittyCharacterPlayer::StartAiming()
 	}
 
 	bIsAiming = true;
-
-	if (GEngine)
-	{
-		GEngine->AddOnScreenDebugMessage(10, 2.0f, FColor::Green, TEXT("조준 시작"));
-	}
 }
 
 void AKittyCharacterPlayer::StopAiming()
@@ -433,14 +428,7 @@ void AKittyCharacterPlayer::StopAiming()
 	bIsAiming = false;
 	bIsFiring = false;
 
-	GetWorldTimerManager().ClearTimer(
-		FireAnimationTimerHandle
-	);
-
-	if (GEngine)
-	{
-		GEngine->AddOnScreenDebugMessage(10, 2.0f, FColor::White, TEXT("조준 종료"));
-	}
+	GetWorldTimerManager().ClearTimer(FireAnimationTimerHandle);
 }
 
 void AKittyCharacterPlayer::Fire()
@@ -475,6 +463,7 @@ void AKittyCharacterPlayer::PerformFireTrace()
 	if (!IsValid(Pistol)) return;
 	
 	Pistol->PlayMuzzleFlash();   // 이펙트 재생
+	Pistol->PlayFireSound();     // 사운드 재생
 	
 	if (FireCameraShakeClass)    // 카메라 흔들림
 	{
@@ -499,11 +488,11 @@ void AKittyCharacterPlayer::PerformFireTrace()
 
 	const FVector DebugEnd = bHit ? HitResult.ImpactPoint : TraceEnd;
 
-	DrawDebugLine(World, TraceStart, DebugEnd, bHit ? FColor::Green : FColor::Red, false, 1.0f, 0, 1.5f);
+	//DrawDebugLine(World, TraceStart, DebugEnd, bHit ? FColor::Green : FColor::Red, false, 1.0f, 0, 1.5f);
 
 	if (bHit)
 	{
-		DrawDebugSphere(World,HitResult.ImpactPoint,8.0f,12,FColor::Yellow,false,1.0f);
+		//DrawDebugSphere(World,HitResult.ImpactPoint,8.0f,12,FColor::Yellow,false,1.0f);
 	}
 
 	AActor* HitActor = bHit ? HitResult.GetActor() : nullptr;

@@ -12,6 +12,9 @@
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraSystem.h"
 
+#include "Kismet/GameplayStatics.h"
+#include "Sound/SoundBase.h"
+
 AKTPistolPickup::AKTPistolPickup()
 {
 	InteractionText = FText::FromString(TEXT("[F] 총 획득하기"));
@@ -84,4 +87,14 @@ void AKTPistolPickup::PlayMuzzleFlash()
 	}
 
 	UNiagaraFunctionLibrary::SpawnSystemAttached(MuzzleFlashEffect, MuzzlePoint, NAME_None, FVector::ZeroVector, FRotator::ZeroRotator, EAttachLocation::SnapToTarget, true);
+}
+
+void AKTPistolPickup::PlayFireSound()
+{
+	if (!IsValid(FireSound))
+	{
+		return;
+	}
+
+	UGameplayStatics::PlaySoundAtLocation(this, FireSound, GetMuzzleLocation(), FireSoundVolume, FireSoundPitch);
 }

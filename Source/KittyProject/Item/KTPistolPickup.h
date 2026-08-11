@@ -29,6 +29,9 @@ public:
 	// 이펙트 재생
 	void PlayMuzzleFlash();
 	
+	// 권총 sound 재생
+	void PlayFireSound();
+	
 protected:
 	// 총구 위치와 방향을 나타내는 컴포넌트
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Pistol|Components")
@@ -37,4 +40,16 @@ protected:
 	// 발사할 때 MuzzlePoint에 생성할 Niagara 이펙트
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Pistol|Effects")
 	TObjectPtr<class UNiagaraSystem> MuzzleFlashEffect;
+	
+	// 권총 발사음
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Pistol|Sound")
+	TObjectPtr<USoundBase> FireSound;
+
+	// 발사음 크기
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Pistol|Sound", meta = (ClampMin = "0.0"))
+	float FireSoundVolume = 1.0f;
+
+	// 발사음 높낮이
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Pistol|Sound", meta = (ClampMin = "0.1"))
+	float FireSoundPitch = 1.0f;
 };
