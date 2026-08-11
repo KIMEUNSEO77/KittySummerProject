@@ -7,7 +7,8 @@
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "UObject/ConstructorHelpers.h"
-
+#include "Item/KTItemPickupBase.h"
+#include "Engine/World.h"
 
 AKittyCharacterNonplayer::AKittyCharacterNonplayer()
 {
@@ -43,6 +44,35 @@ AKittyCharacterNonplayer::AKittyCharacterNonplayer()
 	{
 		RightDeathMontage = RightDeathMontageRef.Object;
 	}
+}
+
+void AKittyCharacterNonplayer::BeginPlay()
+{
+	Super::BeginPlay();
+	
+	if (!CarriedItemClass || !GetWorld())
+	{
+		return;
+	}
+
+	const FTransform SocketTransform = GetMesh()->GetSocketTransform(CarriedItemSocketName, ERelativeTransformSpace::RTS_World);
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = this;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	CarriedItem = GetWorld()->SpawnActor<AKTItemPickupBase>(CarriedItemClass, SocketTransform, SpawnParams);
+
+	if (!IsValid(CarriedItem))
+	{
+		return;
+	}
+
+	// 살아 있을 때는 획득 불가능
+	CarriedItem->SetPickupInteractionEnabled(false);
+
+	// 경비원 허리 소켓에 부착
+	CarriedItem->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, CarriedItemSocketName);
 }
 
 void AKittyCharacterNonplayer::PostInitializeComponents()
@@ -151,6 +181,10 @@ void AKittyCharacterNonplayer::Die(UAnimMontage* DeathMontage)
 	
 	bIsDead = true;
 	SetCanBeDamaged(false);
+	if (IsValid(CarriedItem))
+	{
+		CarriedItem->SetPickupInteractionEnabled(true);
+	}
 	
 	if (AKittyAIController* AIController = Cast<AKittyAIController>(GetController()))
 	{

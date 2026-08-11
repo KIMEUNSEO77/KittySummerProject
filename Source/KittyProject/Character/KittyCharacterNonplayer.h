@@ -48,6 +48,7 @@ public:
 	}
 	
 protected:
+	virtual void BeginPlay() override;
 	virtual void PostInitializeComponents() override;
 	
 	UFUNCTION()
@@ -105,4 +106,18 @@ private:
 	
 	UFUNCTION(CallInEditor, Category = "Debug|Death")
 	void DebugKill();
+	
+	// Item Section
+private:
+	// 경비원이 소지한 아이템 종류
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drop", meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<class AKTItemPickupBase> CarriedItemClass;
+
+	// 아이템을 붙일 메시 소켓
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drop", meta = (AllowPrivateAccess = "true"))
+	FName CarriedItemSocketName = TEXT("KeycardSocket");
+
+	// 허리에 붙어 있는 아이템
+	UPROPERTY()
+	TObjectPtr<class AKTItemPickupBase> CarriedItem;
 };

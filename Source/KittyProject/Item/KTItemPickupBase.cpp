@@ -97,3 +97,13 @@ FText AKTItemPickupBase::GetInteractionText_Implementation() const
 	return InteractionText;
 }
 
+void AKTItemPickupBase::SetPickupInteractionEnabled(bool bEnabled)
+{
+	if (!IsValid(InteractionCollision))
+	{
+		return;
+	}
+
+	InteractionCollision->SetCollisionEnabled(bEnabled ? ECollisionEnabled::QueryOnly : ECollisionEnabled::NoCollision);
+}
+
