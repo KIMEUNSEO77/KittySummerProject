@@ -21,6 +21,8 @@ public:
 	// BlueprintNativeEvent의 C++ 기본 동작을 구현하기 위해 _Implementation을 사용
 	virtual void Interact_Implementation(AActor* Interactor) override;
 	virtual FText GetInteractionText_Implementation() const override;
+	
+	void SetPickupInteractionEnabled(bool bEnabled); // 픽업 활성화 함수
 
 protected:
 	// Called when the game starts or when spawned

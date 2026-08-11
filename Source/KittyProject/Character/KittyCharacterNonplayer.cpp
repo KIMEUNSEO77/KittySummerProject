@@ -46,6 +46,35 @@ AKittyCharacterNonplayer::AKittyCharacterNonplayer()
 	}
 }
 
+void AKittyCharacterNonplayer::BeginPlay()
+{
+	Super::BeginPlay();
+	
+	if (!CarriedItemClass || !GetWorld())
+	{
+		return;
+	}
+
+	const FTransform SocketTransform = GetMesh()->GetSocketTransform(CarriedItemSocketName, ERelativeTransformSpace::RTS_World);
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = this;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	CarriedItem = GetWorld()->SpawnActor<AKTItemPickupBase>(CarriedItemClass, SocketTransform, SpawnParams);
+
+	if (!IsValid(CarriedItem))
+	{
+		return;
+	}
+
+	// 살아 있을 때는 획득 불가능
+	CarriedItem->SetPickupInteractionEnabled(false);
+
+	// 경비원 허리 소켓에 부착
+	CarriedItem->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, CarriedItemSocketName);
+}
+
 void AKittyCharacterNonplayer::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
@@ -152,8 +181,10 @@ void AKittyCharacterNonplayer::Die(UAnimMontage* DeathMontage)
 	
 	bIsDead = true;
 	SetCanBeDamaged(false);
-	
-	SpawnDeathDrop(); // Item Drop
+	if (IsValid(CarriedItem))
+	{
+		CarriedItem->SetPickupInteractionEnabled(true);
+	}
 	
 	if (AKittyAIController* AIController = Cast<AKittyAIController>(GetController()))
 	{
@@ -182,20 +213,4 @@ void AKittyCharacterNonplayer::DebugKill()
 	DeathDirection = DebugDirection;
 	
 	Die(GetDeathMontage(DeathDirection));
-}
-
-void AKittyCharacterNonplayer::SpawnDeathDrop()
-{
-	if (!DeathDropClass || !GetWorld())
-	{
-		return;
-	}
-
-	const FVector SpawnLocation = GetActorLocation() + GetActorRightVector() * DeathDropDistance + FVector(0.0f, 0.0f, 20.0f);
-	const FRotator SpawnRotation = FRotator::ZeroRotator;
-
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
-
-	GetWorld()->SpawnActor<AKTItemPickupBase>(DeathDropClass, SpawnLocation, SpawnRotation, SpawnParams);
 }

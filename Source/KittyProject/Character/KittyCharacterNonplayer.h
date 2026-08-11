@@ -48,6 +48,7 @@ public:
 	}
 	
 protected:
+	virtual void BeginPlay() override;
 	virtual void PostInitializeComponents() override;
 	
 	UFUNCTION()
@@ -107,14 +108,16 @@ private:
 	void DebugKill();
 	
 	// Item Section
-public:
-	// 이 NPC가 죽었을 때 생성할 픽업 아이템
+private:
+	// 경비원이 소지한 아이템 종류
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drop", meta = (AllowPrivateAccess = "true"))
-	TSubclassOf<class AKTItemPickupBase> DeathDropClass;
+	TSubclassOf<class AKTItemPickupBase> CarriedItemClass;
 
-	// 아이템이 시체 옆에 생성할 거리
+	// 아이템을 붙일 메시 소켓
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drop", meta = (AllowPrivateAccess = "true"))
-	float DeathDropDistance = 70.0f;
+	FName CarriedItemSocketName = TEXT("KeycardSocket");
 
-	void SpawnDeathDrop();
+	// 허리에 붙어 있는 아이템
+	UPROPERTY()
+	TObjectPtr<class AKTItemPickupBase> CarriedItem;
 };
