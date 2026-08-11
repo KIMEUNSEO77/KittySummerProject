@@ -26,8 +26,15 @@ public:
 	// 총구가 바라보는 월드 방향
 	FVector GetMuzzleForwardVector() const;
 	
+	// 이펙트 재생
+	void PlayMuzzleFlash();
+	
 protected:
 	// 총구 위치와 방향을 나타내는 컴포넌트
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Pistol|Components")
 	TObjectPtr<class USceneComponent> MuzzlePoint;
+	
+	// 발사할 때 MuzzlePoint에 생성할 Niagara 이펙트
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Pistol|Effects")
+	TObjectPtr<class UNiagaraSystem> MuzzleFlashEffect;
 };

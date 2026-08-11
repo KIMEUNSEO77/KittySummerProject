@@ -472,6 +472,8 @@ void AKittyCharacterPlayer::PerformFireTrace()
 	AKTPistolPickup* Pistol = Cast<AKTPistolPickup>(EquippedPistol);
 
 	if (!IsValid(Pistol)) return;
+	
+	Pistol->PlayMuzzleFlash();   // 이펙트 재생
 
 	const FVector TraceStart = Pistol->GetMuzzleLocation();
 	const FVector TraceDirection = Pistol->GetMuzzleForwardVector();
