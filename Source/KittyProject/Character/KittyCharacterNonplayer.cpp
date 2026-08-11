@@ -7,7 +7,8 @@
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "UObject/ConstructorHelpers.h"
-
+#include "Item/KTItemPickupBase.h"
+#include "Engine/World.h"
 
 AKittyCharacterNonplayer::AKittyCharacterNonplayer()
 {
@@ -152,6 +153,8 @@ void AKittyCharacterNonplayer::Die(UAnimMontage* DeathMontage)
 	bIsDead = true;
 	SetCanBeDamaged(false);
 	
+	SpawnDeathDrop(); // Item Drop
+	
 	if (AKittyAIController* AIController = Cast<AKittyAIController>(GetController()))
 	{
 		AIController->StopMovement();
@@ -179,4 +182,20 @@ void AKittyCharacterNonplayer::DebugKill()
 	DeathDirection = DebugDirection;
 	
 	Die(GetDeathMontage(DeathDirection));
+}
+
+void AKittyCharacterNonplayer::SpawnDeathDrop()
+{
+	if (!DeathDropClass || !GetWorld())
+	{
+		return;
+	}
+
+	const FVector SpawnLocation = GetActorLocation() + GetActorRightVector() * DeathDropDistance + FVector(0.0f, 0.0f, 20.0f);
+	const FRotator SpawnRotation = FRotator::ZeroRotator;
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+
+	GetWorld()->SpawnActor<AKTItemPickupBase>(DeathDropClass, SpawnLocation, SpawnRotation, SpawnParams);
 }

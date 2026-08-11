@@ -105,4 +105,16 @@ private:
 	
 	UFUNCTION(CallInEditor, Category = "Debug|Death")
 	void DebugKill();
+	
+	// Item Section
+public:
+	// 이 NPC가 죽었을 때 생성할 픽업 아이템
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drop", meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<class AKTItemPickupBase> DeathDropClass;
+
+	// 아이템이 시체 옆에 생성할 거리
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Drop", meta = (AllowPrivateAccess = "true"))
+	float DeathDropDistance = 70.0f;
+
+	void SpawnDeathDrop();
 };
