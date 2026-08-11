@@ -23,6 +23,7 @@
 #include "Inventory/KTInventoryComponent.h"
 #include "Player/KittyPlayerController.h"
 #include "Kismet/GameplayStatics.h"
+#include "Camera/CameraShakeBase.h"
 
 AKittyCharacterPlayer::AKittyCharacterPlayer()
 {
@@ -474,6 +475,14 @@ void AKittyCharacterPlayer::PerformFireTrace()
 	if (!IsValid(Pistol)) return;
 	
 	Pistol->PlayMuzzleFlash();   // 이펙트 재생
+	
+	if (FireCameraShakeClass)    // 카메라 흔들림
+	{
+		if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
+		{
+			PlayerController->ClientStartCameraShake(FireCameraShakeClass, FireCameraShakeScale);
+		}
+	}
 
 	const FVector TraceStart = Pistol->GetMuzzleLocation();
 	const FVector TraceDirection = Pistol->GetMuzzleForwardVector();

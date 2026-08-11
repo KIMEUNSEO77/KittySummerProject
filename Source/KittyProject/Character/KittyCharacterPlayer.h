@@ -152,4 +152,11 @@ protected:
 	// 카드키, 문서, 조사물 등을 저장하는 인벤토리
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory")
 	TObjectPtr<class UKTInventoryComponent> InventoryComponent;
+	
+	// 권총 발사 시 재생할 카메라 흔들림
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Camera")
+	TSubclassOf<class UCameraShakeBase> FireCameraShakeClass;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Camera")
+	float FireCameraShakeScale = 1.0f;
 };
