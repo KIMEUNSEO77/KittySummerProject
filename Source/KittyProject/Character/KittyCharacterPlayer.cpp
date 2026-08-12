@@ -126,6 +126,7 @@ void AKittyCharacterPlayer::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 	
 	CheckForInteractable();
+	UpdateInventoryCamera(DeltaTime);
 }
 
 void AKittyCharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -540,5 +541,135 @@ void AKittyCharacterPlayer::ToggleInventory()
 	if (KittyPlayerController)
 	{
 		KittyPlayerController->ToggleInventory();
+	}
+}
+
+void AKittyCharacterPlayer::EnterInventoryCamera()
+{
+	if (!CameraBoom || !FollowCamera)
+	{
+		return;
+	}
+
+	// 인벤토리를 처음 열 때만 현재 게임 카메라를 저장합니다.
+	if (!bIsInventoryCameraActive)
+	{
+		NormalCameraArmLength = CameraBoom->TargetArmLength;
+		NormalCameraSocketOffset = CameraBoom->SocketOffset;
+		NormalCameraFOV = FollowCamera->FieldOfView;
+	}
+
+	CameraTransitionStartArmLength = CameraBoom->TargetArmLength;
+	CameraTransitionStartSocketOffset = CameraBoom->SocketOffset;
+	CameraTransitionStartFOV = FollowCamera->FieldOfView;
+
+	InventoryCameraTransitionElapsed = 0.0f;
+	bIsInventoryCameraActive = true;
+	bIsInventoryCameraTransitioning = true;
+}
+
+void AKittyCharacterPlayer::ExitInventoryCamera()
+{
+	if (!CameraBoom || !FollowCamera)
+	{
+		return;
+	}
+
+	CameraTransitionStartArmLength = CameraBoom->TargetArmLength;
+	CameraTransitionStartSocketOffset = CameraBoom->SocketOffset;
+	CameraTransitionStartFOV = FollowCamera->FieldOfView;
+
+	InventoryCameraTransitionElapsed = 0.0f;
+	bIsInventoryCameraActive = false;
+	bIsInventoryCameraTransitioning = true;
+}
+
+void AKittyCharacterPlayer::UpdateInventoryCamera(float DeltaTime)
+{
+	if (!CameraBoom || !FollowCamera)
+	{
+		return;
+	}
+	if (!bIsInventoryCameraTransitioning)
+	{
+		return;
+	}
+	// 열기/닫기 전환이 끝난 상태면 더 계산하지 않습니다.
+	const bool bAlreadyAtInventoryCamera =
+		bIsInventoryCameraActive &&
+		FMath::IsNearlyEqual(
+			CameraBoom->TargetArmLength,
+			InventoryCameraArmLength,
+			0.1f
+		);
+
+	const bool bAlreadyAtNormalCamera =
+		!bIsInventoryCameraActive &&
+		FMath::IsNearlyEqual(
+			CameraBoom->TargetArmLength,
+			NormalCameraArmLength,
+			0.1f
+		);
+
+	if (bAlreadyAtInventoryCamera || bAlreadyAtNormalCamera)
+	{
+		return;
+	}
+
+	InventoryCameraTransitionElapsed += DeltaTime;
+
+	const float Alpha = FMath::Clamp(
+		InventoryCameraTransitionElapsed /
+		InventoryCameraTransitionDuration,
+		0.0f,
+		1.0f
+	);
+
+	// 시작과 끝이 부드러운 0.2초 카메라 이동입니다.
+	const float SmoothAlpha = FMath::InterpEaseInOut(
+		0.0f,
+		1.0f,
+		Alpha,
+		2.0f
+	);
+
+	const float TargetArmLength =
+		bIsInventoryCameraActive
+			? InventoryCameraArmLength
+			: NormalCameraArmLength;
+
+	const FVector TargetSocketOffset =
+		bIsInventoryCameraActive
+			? InventoryCameraSocketOffset
+			: NormalCameraSocketOffset;
+
+	const float TargetFOV =
+		bIsInventoryCameraActive
+			? InventoryCameraFOV
+			: NormalCameraFOV;
+
+	CameraBoom->TargetArmLength = FMath::Lerp(
+		CameraTransitionStartArmLength,
+		TargetArmLength,
+		SmoothAlpha
+	);
+
+	CameraBoom->SocketOffset = FMath::Lerp(
+		CameraTransitionStartSocketOffset,
+		TargetSocketOffset,
+		SmoothAlpha
+	);
+
+	FollowCamera->SetFieldOfView(
+		FMath::Lerp(
+			CameraTransitionStartFOV,
+			TargetFOV,
+			SmoothAlpha
+		)
+	);
+	
+	if (Alpha >= 1.0f)
+	{
+		bIsInventoryCameraTransitioning = false;
 	}
 }

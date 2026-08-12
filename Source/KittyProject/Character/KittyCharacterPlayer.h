@@ -24,6 +24,9 @@ public:
 		return InventoryComponent;
 	}
 	
+	void EnterInventoryCamera();
+    void ExitInventoryCamera();
+    
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
@@ -159,4 +162,37 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Camera")
 	float FireCameraShakeScale = 1.0f;
+	
+	// 인벤토리 진입 카메라
+private:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Inventory|Camera",
+		meta = (AllowPrivateAccess = "true"))
+	float InventoryCameraArmLength = 250.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Inventory|Camera",
+		meta = (AllowPrivateAccess = "true"))
+	FVector InventoryCameraSocketOffset = FVector(0.0f, 125.0f, 35.0f);
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Inventory|Camera",
+		meta = (AllowPrivateAccess = "true"))
+	float InventoryCameraFOV = 55.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Inventory|Camera",
+		meta = (AllowPrivateAccess = "true"))
+	float InventoryCameraTransitionDuration = 0.2f;
+
+	bool bIsInventoryCameraActive = false;
+	bool bIsInventoryCameraTransitioning = false;
+	
+	float InventoryCameraTransitionElapsed = 0.0f;
+
+	float NormalCameraArmLength = 0.0f;
+	FVector NormalCameraSocketOffset = FVector::ZeroVector;
+	float NormalCameraFOV = 90.0f;
+
+	float CameraTransitionStartArmLength = 0.0f;
+	FVector CameraTransitionStartSocketOffset = FVector::ZeroVector;
+	float CameraTransitionStartFOV = 90.0f;
+
+	void UpdateInventoryCamera(float DeltaTime);
 };

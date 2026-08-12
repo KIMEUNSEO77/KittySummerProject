@@ -236,6 +236,7 @@ void AKittyPlayerController::OpenInventory()
 	);
 	
 	InventoryWidget->PlayOpenAnimation();
+	PlayerCharacter->EnterInventoryCamera();
 	
 	FInputModeGameAndUI InputMode;
 	InputMode.SetWidgetToFocus(
@@ -301,6 +302,12 @@ void AKittyPlayerController::CloseInventory()
 		ObjectiveMarkerWidget->SetVisibility(
 			ESlateVisibility::Visible
 		);
+	}
+	
+	if (AKittyCharacterPlayer* PlayerCharacter =
+	Cast<AKittyCharacterPlayer>(GetPawn()))
+	{
+		PlayerCharacter->ExitInventoryCamera();
 	}
 	
 	bIsInventoryOpen = false;
