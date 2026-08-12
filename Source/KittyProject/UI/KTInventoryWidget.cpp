@@ -142,3 +142,11 @@ void UKTInventoryWidget::UpdateInspectPanel(
 		}
 	}
 }
+
+void UKTInventoryWidget::PlayOpenAnimation()
+{
+	if (Anim_Open)
+	{
+		PlayAnimation(Anim_Open);
+	}
+}

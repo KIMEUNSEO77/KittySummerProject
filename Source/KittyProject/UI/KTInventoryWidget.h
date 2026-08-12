@@ -10,6 +10,7 @@ class UTextBlock;
 class UKTInventoryComponent;
 class UKTInventorySlotWidget;
 class UKTItemDataAsset;
+class UWidgetAnimation;
 
 UCLASS()
 class KITTYPROJECT_API UKTInventoryWidget : public UUserWidget
@@ -24,7 +25,10 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	void RefreshInventory();
-
+	
+	UFUNCTION(BlueprintCallable, Category = "Inventory|Animation")
+	void PlayOpenAnimation();
+	
 protected:
 	virtual void NativeDestruct() override;
 
@@ -52,6 +56,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Inventory")
 	TSubclassOf<UKTInventorySlotWidget> InventorySlotClass;
 
+	UPROPERTY(Transient, meta = (BindWidgetAnim))
+	TObjectPtr<UWidgetAnimation> Anim_Open;
+	
 private:
 	UPROPERTY()
 	TObjectPtr<UKTInventoryComponent> InventoryComponent;

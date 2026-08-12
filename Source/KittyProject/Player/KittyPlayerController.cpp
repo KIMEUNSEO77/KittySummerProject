@@ -234,7 +234,9 @@ void AKittyPlayerController::OpenInventory()
 	InventoryWidget->SetVisibility(
 		ESlateVisibility::Visible
 	);
-
+	
+	InventoryWidget->PlayOpenAnimation();
+	
 	FInputModeGameAndUI InputMode;
 	InputMode.SetWidgetToFocus(
 		InventoryWidget->TakeWidget()
