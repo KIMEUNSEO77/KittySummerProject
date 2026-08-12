@@ -12,7 +12,7 @@
 #include "Character/KittyCharacterPlayer.h"
 #include "Inventory/KTInventoryComponent.h"
 #include "UI/KTInventoryWidget.h"
-
+#include "Kismet/GameplayStatics.h"
 
 void AKittyPlayerController::BeginPlay()
 {
@@ -238,6 +238,11 @@ void AKittyPlayerController::OpenInventory()
 	InventoryWidget->PlayOpenAnimation();
 	PlayerCharacter->EnterInventoryCamera();
 	
+	if (InventoryOpenSound)
+	{
+		UGameplayStatics::PlaySound2D(this, InventoryOpenSound);
+	}
+	
 	FInputModeGameAndUI InputMode;
 	InputMode.SetWidgetToFocus(
 		InventoryWidget->TakeWidget()
@@ -309,7 +314,10 @@ void AKittyPlayerController::CloseInventory()
 	{
 		PlayerCharacter->ExitInventoryCamera();
 	}
-	
+	if (InventoryCloseSound)
+	{
+		UGameplayStatics::PlaySound2D(this, InventoryCloseSound);
+	}
 	bIsInventoryOpen = false;
 }
 void AKittyPlayerController::ShowObjectiveInteractionPrompt(

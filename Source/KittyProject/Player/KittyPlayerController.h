@@ -108,6 +108,11 @@ protected:
 	UPROPERTY()
 	TObjectPtr<UKTInventoryWidget> InventoryWidget;
 	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound|Inventory")
+    TObjectPtr<class USoundBase> InventoryOpenSound;
+    
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound|Inventory")
+    TObjectPtr<class USoundBase> InventoryCloseSound;
 
 	bool bIsInventoryOpen = false;
 };
