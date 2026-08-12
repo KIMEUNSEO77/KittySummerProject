@@ -5,6 +5,8 @@
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SphereComponent.h"
+#include "Character/KittyCharacterPlayer.h"
+#include "Inventory/KTInventoryComponent.h"
 #include "Engine/Engine.h"
 
 // Sets default values
@@ -34,8 +36,37 @@ AKTKeycardDoor::AKTKeycardDoor()
 
 void AKTKeycardDoor::Interact_Implementation(AActor* Interactor)
 {
-	if (!IsValid(Interactor))
+	// 상호작용한 Actor가 플레이어인지 확인
+	AKittyCharacterPlayer* Player = Cast<AKittyCharacterPlayer>(Interactor);
+
+	if (!IsValid(Player))
 	{
+		return;
+	}
+
+	// 플레이어의 인벤토리 가져오기
+	UKTInventoryComponent* Inventory = Player->GetInventoryComponent();
+
+	if (!IsValid(Inventory))
+	{
+		return;
+	}
+
+	// 출입증 보유 여부 확인
+	const bool bHasKeycard = Inventory->HasItemByID(FName(TEXT("Keycard")));
+
+	if (!bHasKeycard)
+	{
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(
+				-1,
+				2.0f,
+				FColor::Red,
+				TEXT("출입증이 필요합니다.")
+			);
+		}
+
 		return;
 	}
 
@@ -45,7 +76,7 @@ void AKTKeycardDoor::Interact_Implementation(AActor* Interactor)
 			-1,
 			2.0f,
 			FColor::Green,
-			TEXT("키카드 문 상호작용 성공")
+			TEXT("출입증 확인 완료!")
 		);
 	}
 }
