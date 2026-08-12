@@ -17,6 +17,9 @@ public:
 	AKTKeycardDoor();
 
 protected:
+	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaTime) override;
+	
 	// 문틀처럼 움직이지 않는 부분
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Door|Components")
 	TObjectPtr<USceneComponent> SceneRoot;
@@ -34,4 +37,24 @@ protected:
 
 	// 플레이어가 문을 바라볼 때 표시할 안내 문구
 	virtual FText GetInteractionText_Implementation() const override;
+	
+	// 문이 열렸는지 여부
+	bool bIsOpen = false;
+
+	// 문이 열리는 중인지 여부
+	bool bIsOpening = false;
+
+	// 문이 닫혀 있을 때 위치
+	FVector ClosedLocation;
+
+	// 문이 완전히 열렸을 때 위치
+	FVector OpenLocation;
+
+	// 문이 위로 이동할 거리
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Door")
+	float OpenHeight = 250.0f;
+
+	// 문이 열리는 속도
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Door")
+	float OpenSpeed = 1.0f;
 };

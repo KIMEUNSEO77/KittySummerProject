@@ -12,7 +12,8 @@
 // Sets default values
 AKTKeycardDoor::AKTKeycardDoor()
 {
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bStartWithTickEnabled = false;
 
 	SceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("SceneRoot"));
 	SetRootComponent(SceneRoot);
@@ -32,6 +33,44 @@ AKTKeycardDoor::AKTKeycardDoor()
 
 	// 플레이어와 총의 Line Trace가 문을 통과하지 않도록 설정
 	DoorMesh->SetCollisionProfileName(TEXT("BlockAll"));
+}
+
+void AKTKeycardDoor::BeginPlay()
+{
+	Super::BeginPlay();
+	
+	// 블루프린트에서 설정한 문 메시의 현재 상대 위치 저장
+	ClosedLocation = DoorMesh->GetRelativeLocation();
+
+	// 닫힌 위치에서 위쪽으로 OpenHeight만큼 이동한 위치
+	OpenLocation = ClosedLocation + FVector(0.0f, 0.0f, OpenHeight);
+}
+
+void AKTKeycardDoor::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+	
+	if (!bIsOpening || !IsValid(DoorMesh))
+	{
+		return;
+	}
+
+	const FVector CurrentLocation = DoorMesh->GetRelativeLocation();
+	const FVector NewLocation = FMath::VInterpTo(CurrentLocation, OpenLocation, DeltaTime, OpenSpeed);
+
+	DoorMesh->SetRelativeLocation(NewLocation);
+
+	// 목표 위치에 거의 도착
+	if (NewLocation.Equals(OpenLocation, 1.0f))
+	{
+		DoorMesh->SetRelativeLocation(OpenLocation);
+
+		bIsOpening = false;
+		bIsOpen = true;
+
+		// Tick 중지
+		SetActorTickEnabled(false);
+	}
 }
 
 void AKTKeycardDoor::Interact_Implementation(AActor* Interactor)
@@ -79,6 +118,19 @@ void AKTKeycardDoor::Interact_Implementation(AActor* Interactor)
 			TEXT("출입증 확인 완료!")
 		);
 	}
+	
+	// 이미 열렸거나 열리는 중이라면 다시 실행하지 않음
+	if (bIsOpen || bIsOpening)
+	{
+		return;
+	}
+
+	// 문 열기 시작
+	bIsOpening = true;
+	SetActorTickEnabled(true);
+
+	// 열린 뒤에는 다시 상호작용 대상으로 감지하지 않도록 비활성화
+	InteractionCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
 FText AKTKeycardDoor::GetInteractionText_Implementation() const
