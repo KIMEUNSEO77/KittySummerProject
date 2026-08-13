@@ -3,10 +3,13 @@
 #include "Character/KittyCharacterPlayer.h"
 
 #include "Camera/CameraComponent.h"
+#include "Animation/AnimInstance.h"
+#include "Animation/AnimSequence.h"
 #include "Engine/LocalPlayer.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "GameFramework/PlayerController.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "InputAction.h"
 #include "InputMappingContext.h"
@@ -42,6 +45,10 @@ AKittyCharacterPlayer::AKittyCharacterPlayer()
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	FollowCamera->bUsePawnControlRotation = false;
+
+	GetCharacterMovement()->GetNavAgentPropertiesRef().bCanCrouch = true;
+	GetCharacterMovement()->MaxWalkSpeedCrouched = 100.0f;
+	GetCharacterMovement()->SetCrouchedHalfHeight(60.0f);
 
 	// Input
 	static ConstructorHelpers::FObjectFinder<UInputAction> InputActionJumpRef(TEXT("/Game/MyInput/Input/Actions/IA_Jump.IA_Jump"));
@@ -112,6 +119,27 @@ AKittyCharacterPlayer::AKittyCharacterPlayer()
 	{
 		InventoryAction = InputActionInventoryRef.Object;
 	}
+
+	static ConstructorHelpers::FObjectFinder<UInputAction> InputActionCrouchRef(TEXT("/Game/MyInput/Input/Actions/IA_Crouch.IA_Crouch"));
+
+	if (InputActionCrouchRef.Succeeded())
+	{
+		CrouchAction = InputActionCrouchRef.Object;
+	}
+
+	static ConstructorHelpers::FObjectFinder<UAnimSequence> StandingToCrouchedAnimationRef(TEXT("/Game/Animations/Crouch/Standing_To_Crouched.Standing_To_Crouched"));
+
+	if (StandingToCrouchedAnimationRef.Succeeded())
+	{
+		StandingToCrouchedAnimation = StandingToCrouchedAnimationRef.Object;
+	}
+
+	static ConstructorHelpers::FObjectFinder<UAnimSequence> CrouchedToStandingAnimationRef(TEXT("/Game/Animations/Crouch/Crouched_To_Standing.Crouched_To_Standing"));
+
+	if (CrouchedToStandingAnimationRef.Succeeded())
+	{
+		CrouchedToStandingAnimation = CrouchedToStandingAnimationRef.Object;
+	}
 }
 
 void AKittyCharacterPlayer::BeginPlay()
@@ -150,6 +178,8 @@ void AKittyCharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInp
 	EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Completed, this, &AKittyCharacterPlayer::StopAiming);
 	EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Started, this, &AKittyCharacterPlayer::Fire);
 	EnhancedInputComponent->BindAction(InventoryAction,ETriggerEvent::Started,this,&AKittyCharacterPlayer::ToggleInventory);
+	EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Started, this, &AKittyCharacterPlayer::CrouchStart);
+	EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Completed, this, &AKittyCharacterPlayer::CrouchEnd);
 
 }
 
@@ -261,6 +291,34 @@ void AKittyCharacterPlayer::JumpEnd()
 {
 	bIsJumping = false;
 	StopJumping();
+}
+
+void AKittyCharacterPlayer::CrouchStart()
+{
+	const bool bWasCrouching = GetCharacterMovement()->IsCrouching();
+	Crouch();
+
+	if (!bWasCrouching && StandingToCrouchedAnimation)
+	{
+		if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
+		{
+			AnimInstance->PlaySlotAnimationAsDynamicMontage(StandingToCrouchedAnimation, TEXT("DefaultSlot"));
+		}
+	}
+}
+
+void AKittyCharacterPlayer::CrouchEnd()
+{
+	const bool bWasCrouching = GetCharacterMovement()->IsCrouching();
+	UnCrouch();
+
+	if (bWasCrouching && !GetCharacterMovement()->IsCrouching() && CrouchedToStandingAnimation)
+	{
+		if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
+		{
+			AnimInstance->PlaySlotAnimationAsDynamicMontage(CrouchedToStandingAnimation, TEXT("DefaultSlot"));
+		}
+	}
 }
 
 void AKittyCharacterPlayer::CheckForInteractable()
