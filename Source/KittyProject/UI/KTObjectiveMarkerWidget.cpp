@@ -23,6 +23,7 @@ void UKTObjectiveMarkerWidget::SetTargetActor(
 	AActor* NewTargetActor)
 {
 	TargetActor = NewTargetActor;
+	InteractionActor.Reset();
 
 	// 새 목적지가 생기면 우선 일반 목적지 마커 상태로 시작합니다.
 	bShowingInteractionPrompt = false;
@@ -44,11 +45,11 @@ bool UKTObjectiveMarkerWidget::IsTrackingActor(
 }
 
 void UKTObjectiveMarkerWidget::SetInteractionPrompt(
-	bool bShouldShowInteraction,
+	AActor* InteractableActor,
 	const FText& PromptText)
 {
-	bShowingInteractionPrompt =
-		bShouldShowInteraction && TargetActor.IsValid();
+	InteractionActor = InteractableActor;
+	bShowingInteractionPrompt = InteractionActor.IsValid();
 
 	if (Txt_InteractionText &&
 		bShowingInteractionPrompt)
@@ -57,6 +58,12 @@ void UKTObjectiveMarkerWidget::SetInteractionPrompt(
 	}
 
 	UpdateDisplayMode();
+
+	SetVisibility(
+		bShowingInteractionPrompt || TargetActor.IsValid()
+			? ESlateVisibility::HitTestInvisible
+			: ESlateVisibility::Collapsed
+	);
 }
 
 void UKTObjectiveMarkerWidget::UpdateDisplayMode()
@@ -91,7 +98,12 @@ void UKTObjectiveMarkerWidget::NativeTick(
 
 void UKTObjectiveMarkerWidget::UpdateMarker()
 {
-	if (!TargetActor.IsValid())
+	AActor* DisplayActor =
+		bShowingInteractionPrompt && InteractionActor.IsValid()
+			? InteractionActor.Get()
+			: TargetActor.Get();
+
+	if (!IsValid(DisplayActor))
 	{
 		SetVisibility(ESlateVisibility::Collapsed);
 		return;
@@ -108,7 +120,7 @@ void UKTObjectiveMarkerWidget::UpdateMarker()
 	}
 
 	const FVector TargetLocation =
-		TargetActor->GetActorLocation() +
+		DisplayActor->GetActorLocation() +
 		FVector(0.0f, 0.0f, 50.0f);
 
 	const FVector CameraLocation =

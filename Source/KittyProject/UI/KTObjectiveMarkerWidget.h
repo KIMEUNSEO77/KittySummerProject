@@ -23,7 +23,7 @@ public:
 
 	// 일반 목적지 마커와 상호작용 UI 상태를 전환합니다.
 	void SetInteractionPrompt(
-		bool bShouldShowInteraction,
+		AActor* InteractableActor,
 		const FText& PromptText
 	);
 
@@ -54,6 +54,7 @@ protected:
 
 private:
 	TWeakObjectPtr<AActor> TargetActor;
+	TWeakObjectPtr<AActor> InteractionActor;
 
 	bool bShowingInteractionPrompt = false;
 

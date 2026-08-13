@@ -324,28 +324,23 @@ void AKittyPlayerController::ShowObjectiveInteractionPrompt(
 	AActor* InteractableActor,
 	const FText& PromptText)
 {
-	if (!ObjectiveMarkerWidget)
+	if (!ObjectiveMarkerWidget || bIsInventoryOpen)
 	{
 		return;
 	}
 
-	const bool bIsCurrentMissionTarget =
-		ObjectiveMarkerWidget->IsTrackingActor(
-			InteractableActor
-		);
-
 	ObjectiveMarkerWidget->SetInteractionPrompt(
-		bIsCurrentMissionTarget,
+		InteractableActor,
 		PromptText
 	);
 }
 
 void AKittyPlayerController::HideObjectiveInteractionPrompt()
 {
-	if (ObjectiveMarkerWidget)
+	if (ObjectiveMarkerWidget && !bIsInventoryOpen)
 	{
 		ObjectiveMarkerWidget->SetInteractionPrompt(
-			false,
+			nullptr,
 			FText::GetEmpty()
 		);
 	}
