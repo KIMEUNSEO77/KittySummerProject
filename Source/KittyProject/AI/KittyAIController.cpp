@@ -7,6 +7,7 @@
 #include "BehaviorTree/BlackboardData.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "BehaviorTree/BehaviorTreeComponent.h"
+#include "AITypes.h"
 
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AISenseConfig_Sight.h"
@@ -70,6 +71,7 @@ void AKittyAIController::RunAI()
 		BlackboardPtr->SetValueAsVector(TEXT("HomePos"), ControlledPawn->GetActorLocation());
 
 		BlackboardPtr->SetValueAsInt(TEXT("PatrolIndex"), 0);
+		BlackboardPtr->SetValueAsBool(TEXT("IsSearching"), false);
 
 		if (const AKittyCharacterNonplayer* NPC = Cast<AKittyCharacterNonplayer>(ControlledPawn))
 		{
@@ -155,11 +157,20 @@ void AKittyAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus St
 	}
 
 	static const FName TargetKey(TEXT("Target"));
+	static const FName LastSeenLocationKey(TEXT("LastSeenLocation"));
+	static const FName IsSearchingKey(TEXT("IsSearching"));
 
 	if (Stimulus.WasSuccessfullySensed())
 	{
 		// 플레이어를 봤다.
 		BlackboardComponent->SetValueAsObject(TargetKey, Actor);
+		BlackboardComponent->SetValueAsVector(LastSeenLocationKey, Actor->GetActorLocation());
+		BlackboardComponent->SetValueAsBool(IsSearchingKey, false);
+
+		if (const AKittyCharacterNonplayer* NPC = Cast<AKittyCharacterNonplayer>(GetPawn()))
+		{
+			BlackboardComponent->SetValueAsBool(TEXT("IsPatrolEnabled"), NPC->IsPatrolEnabled());
+		}
 	}
 	else
 	{
@@ -168,6 +179,18 @@ void AKittyAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus St
 
 		if (CurrentTarget == Actor)
 		{
+			FVector LastSeenLocation = BlackboardComponent->GetValueAsVector(LastSeenLocationKey);
+
+			if (!FAISystem::IsValidLocation(LastSeenLocation))
+			{
+				LastSeenLocation = FAISystem::IsValidLocation(Stimulus.StimulusLocation)
+					? Stimulus.StimulusLocation
+					: Actor->GetActorLocation();
+			}
+
+			BlackboardComponent->SetValueAsVector(LastSeenLocationKey, LastSeenLocation);
+			BlackboardComponent->SetValueAsBool(IsSearchingKey, true);
+			BlackboardComponent->SetValueAsBool(TEXT("IsPatrolEnabled"), false);
 			BlackboardComponent->ClearValue(TargetKey);
 		}
 	}

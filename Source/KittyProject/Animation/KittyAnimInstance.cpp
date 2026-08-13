@@ -35,6 +35,7 @@ void UKittyAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		GroundSpeed = Velocity.Size2D();
 		bIsIdle = GroundSpeed < MovingThreshould;
 		bIsFalling = Movement->IsFalling();
+		bIsCrouching = Movement->IsCrouching();
 		if (AKittyCharacterPlayer* Player = Cast<AKittyCharacterPlayer>(Owner))
 		{
 			bIsJumping = Player->bIsJumping;

@@ -79,6 +79,9 @@ protected:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UInputAction> InventoryAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UInputAction> CrouchAction;
 	
 	// 상호작용 입력 액션
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
@@ -96,6 +99,16 @@ public:
 	void JumpStart();
 	void JumpEnd();
 	bool bIsJumping = false;
+
+	void CrouchStart();
+	void CrouchEnd();
+
+protected:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Crouch|Animation")
+	TObjectPtr<class UAnimSequence> StandingToCrouchedAnimation;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Crouch|Animation")
+	TObjectPtr<class UAnimSequence> CrouchedToStandingAnimation;
 	
 	// Interaction Section
 protected:
