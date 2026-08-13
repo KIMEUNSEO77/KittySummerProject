@@ -34,4 +34,12 @@ protected:
 
 	// 플레이어가 단말기를 바라볼 때 반환할 안내 문구
 	virtual FText GetInteractionText_Implementation() const override;
+	
+	// 단말기 조사 시 표시할 홀로그램 화면
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Terminal|Components")
+	TObjectPtr<class UWidgetComponent> HologramWidget;
+	
+	// 단말기의 조사 완료 여부
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Terminal")
+	bool bIsInvestigated = false;
 };

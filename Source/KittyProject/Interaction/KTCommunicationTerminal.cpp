@@ -7,6 +7,7 @@
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/Engine.h"
+#include "Components/WidgetComponent.h"
 
 // Sets default values
 AKTCommunicationTerminal::AKTCommunicationTerminal()
@@ -36,6 +37,21 @@ AKTCommunicationTerminal::AKTCommunicationTerminal()
 
 	InteractionCollision->SetCollisionResponseToAllChannels(ECR_Overlap);
 	InteractionCollision->SetGenerateOverlapEvents(true);
+	
+	HologramWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("HologramWidget"));
+	HologramWidget->SetupAttachment(SceneRoot);
+
+	// 월드 공간에 홀로그램처럼 표시
+	HologramWidget->SetWidgetSpace(EWidgetSpace::World);
+
+	// 기본 위젯 해상도
+	HologramWidget->SetDrawSize(FVector2D(800.0f, 450.0f));
+
+	// 양쪽에서 보이게 설정
+	HologramWidget->SetTwoSided(true);
+
+	// 처음에는 숨겨둠
+	HologramWidget->SetVisibility(false);
 }
 
 void AKTCommunicationTerminal::Interact_Implementation(AActor* Interactor)
@@ -43,6 +59,19 @@ void AKTCommunicationTerminal::Interact_Implementation(AActor* Interactor)
 	if (!IsValid(Interactor))
 	{
 		return;
+	}
+	
+	// 이미 조사한 단말기라면 다시 실행하지 않음
+	if (bIsInvestigated)
+	{
+		return;
+	}
+
+	bIsInvestigated = true;
+
+	if (IsValid(HologramWidget))
+	{
+		HologramWidget->SetVisibility(true);
 	}
 
 	if (GEngine)
