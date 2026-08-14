@@ -8,6 +8,10 @@
 #include "Components/StaticMeshComponent.h"
 #include "Engine/Engine.h"
 
+#include "UI/KTSafeKeypadWidget.h"
+#include "GameFramework/Pawn.h"
+#include "GameFramework/PlayerController.h"
+
 // Sets default values
 AKTSafe::AKTSafe()
 {
@@ -42,15 +46,66 @@ AKTSafe::AKTSafe()
 
 void AKTSafe::Interact_Implementation(AActor* Interactor)
 {
-	if (!IsValid(Interactor))
+	if (!IsValid(Interactor) || bIsOpen)
 	{
 		return;
 	}
 
-	if (GEngine)
+	// 상호작용한 플레이어 캐릭터를 Pawn으로 변환
+	APawn* PlayerPawn = Cast<APawn>(Interactor);
+
+	if (!IsValid(PlayerPawn))
 	{
-		GEngine->AddOnScreenDebugMessage(-1,3.0f,FColor::Green,TEXT("금고 상호작용 성공"));
+		return;
 	}
+
+	APlayerController* PlayerController = Cast<APlayerController>(PlayerPawn->GetController());
+
+	if (!IsValid(PlayerController))
+	{
+		return;
+	}
+	
+	if (!SafeKeypadWidgetClass)
+	{
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(
+				-1,
+				3.0f,
+				FColor::Red,
+				TEXT("SafeKeypadWidgetClass가 설정되지 않았습니다.")
+			);
+		}
+
+		return;
+	}
+
+	// 아직 위젯을 만들지 않았다면 새로 생성
+	if (!IsValid(SafeKeypadWidget))
+	{
+		SafeKeypadWidget = CreateWidget<UKTSafeKeypadWidget>(PlayerController, SafeKeypadWidgetClass);
+	}
+
+	if (!IsValid(SafeKeypadWidget))
+	{
+		return;
+	}
+
+	// 위젯이 아직 화면에 없다면 추가
+	if (!SafeKeypadWidget->IsInViewport())
+	{
+		SafeKeypadWidget->AddToViewport(50);
+	}
+
+	SafeKeypadWidget->SetVisibility(ESlateVisibility::Visible);
+
+	// 마우스로 UI 버튼을 누를 수 있도록 입력 모드를 변경
+	FInputModeUIOnly InputMode;
+	InputMode.SetWidgetToFocus(SafeKeypadWidget->TakeWidget());
+
+	PlayerController->SetInputMode(InputMode);
+	PlayerController->SetShowMouseCursor(true);
 }
 
 FText AKTSafe::GetInteractionText_Implementation() const

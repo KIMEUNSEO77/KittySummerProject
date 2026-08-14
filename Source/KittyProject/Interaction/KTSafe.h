@@ -50,4 +50,12 @@ protected:
 	// 금고가 열렸는지 확인
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Safe")
 	bool bIsOpen = false;
+	
+	// 화면에 띄울 금고 키패드 위젯 클래스
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Safe|UI")
+	TSubclassOf<class UKTSafeKeypadWidget> SafeKeypadWidgetClass;
+
+	// 현재 화면에 생성된 키패드 위젯
+	UPROPERTY()
+	TObjectPtr<class UKTSafeKeypadWidget> SafeKeypadWidget;
 };
