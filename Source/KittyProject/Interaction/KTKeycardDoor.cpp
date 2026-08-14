@@ -7,6 +7,8 @@
 #include "Components/SphereComponent.h"
 #include "Character/KittyCharacterPlayer.h"
 #include "Inventory/KTInventoryComponent.h"
+#include "Mission/KTMissionSubsystem.h"
+#include "GameplayTagContainer.h"
 #include "Engine/Engine.h"
 
 // Sets default values
@@ -67,7 +69,20 @@ void AKTKeycardDoor::Tick(float DeltaTime)
 
 		bIsOpening = false;
 		bIsOpen = true;
+		
+		if (UKTMissionSubsystem* MissionSubsystem =UKTMissionSubsystem::Get(this))
+		{
+			const FGameplayTag DoorOpenedTag =
+				FGameplayTag::RequestGameplayTag(
+					FName("Mission.Event.Door.KeycardAccepted")
+				);
 
+			MissionSubsystem->BroadcastMissionEvent(
+				DoorOpenedTag,
+				nullptr
+			);
+		}
+		
 		// Tick 중지
 		SetActorTickEnabled(false);
 	}
@@ -135,6 +150,6 @@ void AKTKeycardDoor::Interact_Implementation(AActor* Interactor)
 
 FText AKTKeycardDoor::GetInteractionText_Implementation() const
 {
-	return FText::FromString(TEXT("[F] 출입증 사용하기"));
+	return FText::FromString(TEXT("출입증 사용하기"));
 }
 
