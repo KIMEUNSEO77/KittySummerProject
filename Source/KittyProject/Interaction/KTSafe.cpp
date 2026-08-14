@@ -15,7 +15,8 @@
 // Sets default values
 AKTSafe::AKTSafe()
 {
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bStartWithTickEnabled = false;
 
 	// 기본 루트
 	SceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("SceneRoot"));
@@ -91,6 +92,10 @@ void AKTSafe::Interact_Implementation(AActor* Interactor)
 	{
 		return;
 	}
+	
+	// 이 키패드가 어느 금고의 비밀번호를 검사할지 알려줌
+	SafeKeypadWidget->SetOwningSafe(this);
+	SafeKeypadWidget->ResetPassword();
 
 	// 위젯이 아직 화면에 없다면 추가
 	if (!SafeKeypadWidget->IsInViewport())
@@ -116,5 +121,102 @@ FText AKTSafe::GetInteractionText_Implementation() const
 	}
 
 	return FText::FromString(TEXT("[F] 금고 비밀번호 입력하기"));
+}
+
+void AKTSafe::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+	
+	if (!bIsOpening || !IsValid(DoorPivot))
+	{
+		return;
+	}
+
+	FRotator TargetRotation = ClosedDoorRotation;
+	TargetRotation.Yaw += OpenAngle;
+
+	const FRotator CurrentRotation =
+		DoorPivot->GetRelativeRotation();
+
+	const FRotator NewRotation = FMath::RInterpTo(
+		CurrentRotation,
+		TargetRotation,
+		DeltaTime,
+		DoorOpenSpeed
+	);
+
+	DoorPivot->SetRelativeRotation(NewRotation);
+
+	// 목표 각도에 거의 도착하면 정확한 각도로 맞추고 Tick을 중단
+	if (NewRotation.Equals(TargetRotation, 0.1f))
+	{
+		DoorPivot->SetRelativeRotation(TargetRotation);
+
+		bIsOpening = false;
+		SetActorTickEnabled(false);
+	}
+}
+
+bool AKTSafe::TryUnlock(const FString& EnteredPassword)
+{
+	if (bIsOpen)
+	{
+		return true;
+	}
+
+	if (EnteredPassword != CorrectPassword)
+	{
+		return false;
+	}
+
+	bIsOpen = true;
+	bIsOpening = true;
+
+	// 문 애니메이션이 실행되도록 Tick을 실행
+	SetActorTickEnabled(true);
+
+	CloseKeypad();
+
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(
+			-1,
+			3.0f,
+			FColor::Green,
+			TEXT("비밀번호가 일치합니다. 금고가 열립니다.")
+		);
+	}
+
+	return true;
+}
+
+void AKTSafe::CloseKeypad()
+{
+	if (!IsValid(SafeKeypadWidget))
+	{
+		return;
+	}
+
+	APlayerController* PlayerController = SafeKeypadWidget->GetOwningPlayer();
+
+	SafeKeypadWidget->SetVisibility(ESlateVisibility::Collapsed);
+
+	if (!IsValid(PlayerController))
+	{
+		return;
+	}
+
+	// 캐릭터 조작 모드로 되돌림
+	FInputModeGameOnly InputMode;
+	PlayerController->SetInputMode(InputMode);
+	PlayerController->SetShowMouseCursor(false);
+}
+
+void AKTSafe::BeginPlay()
+{
+	Super::BeginPlay();
+	
+	// 블루프린트에서 맞춰놓은 닫힌 문의 회전값을 저장
+	ClosedDoorRotation = DoorPivot->GetRelativeRotation();
 }
 

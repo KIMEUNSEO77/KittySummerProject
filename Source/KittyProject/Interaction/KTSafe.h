@@ -22,6 +22,15 @@ public:
 	// 금고를 바라봤을 때 표시할 안내 문구
 	virtual FText GetInteractionText_Implementation() const override;
 	
+	// 매 프레임 금고 문을 부드럽게 회전
+	virtual void Tick(float DeltaTime) override;
+
+	// 키패드에서 입력한 비밀번호를 검사
+	bool TryUnlock(const FString& EnteredPassword);
+
+	// 키패드를 닫고 캐릭터 조작으로 복귀
+	void CloseKeypad();
+	
 protected:
 	// 모든 컴포넌트의 기준점
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Safe|Components")
@@ -58,4 +67,20 @@ protected:
 	// 현재 화면에 생성된 키패드 위젯
 	UPROPERTY()
 	TObjectPtr<class UKTSafeKeypadWidget> SafeKeypadWidget;
+	
+	virtual void BeginPlay() override;
+
+	// 금고 문이 열릴 각도
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Safe|Door")
+	float OpenAngle = 90.0f;
+
+	// 숫자가 클수록 문이 빠르게 열림
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Safe|Door")
+	float DoorOpenSpeed = 2.0f;
+
+	// 현재 문이 열리는 중인지
+	bool bIsOpening = false;
+
+	// 블루프린트에서 설정한 문의 최초 회전값
+	FRotator ClosedDoorRotation;
 };

@@ -6,6 +6,7 @@
 #include "Components/Button.h"
 #include "Components/TextBlock.h"
 #include "Engine/Engine.h"
+#include "Interaction/KTSafe.h"
 
 void UKTSafeKeypadWidget::NativeOnInitialized()
 {
@@ -126,16 +127,54 @@ void UKTSafeKeypadWidget::HandleClear()
 
 void UKTSafeKeypadWidget::HandleConfirm()
 {
+	// 네 자리 모두 입력하지 않았다면 판정하지 않음
+	if (EnteredPassword.Len() != 4)
+	{
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(
+				-1,
+				2.0f,
+				FColor::Red,
+				TEXT("비밀번호 네 자리를 입력하세요.")
+			);
+		}
+
+		return;
+	}
+
+	if (!IsValid(OwningSafe))
+	{
+		return;
+	}
+
+	// 정답이면 TryUnlock 내부에서 문을 열고 UI 종료
+	if (OwningSafe->TryUnlock(EnteredPassword))
+	{
+		return;
+	}
+
 	if (GEngine)
 	{
 		GEngine->AddOnScreenDebugMessage(
 			-1,
-			3.0f,
-			FColor::Yellow,
-			FString::Printf(
-				TEXT("입력한 비밀번호: %s"),
-				*EnteredPassword
-			)
+			2.0f,
+			FColor::Red,
+			TEXT("비밀번호가 일치하지 않습니다.")
 		);
 	}
+
+	// 오답이면 입력 내용 삭제
+	ResetPassword();
+}
+
+void UKTSafeKeypadWidget::SetOwningSafe(AKTSafe* InSafe)
+{
+	OwningSafe = InSafe;
+}
+
+void UKTSafeKeypadWidget::ResetPassword()
+{
+	EnteredPassword.Empty();
+	UpdatePasswordText();
 }

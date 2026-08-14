@@ -103,4 +103,15 @@ private:
 
 	UFUNCTION()
 	void HandleConfirm();
+	
+	// 현재 키패드를 사용 중인 금고
+	UPROPERTY()
+	TObjectPtr<class AKTSafe> OwningSafe;
+
+public:
+	// 현재 이 키패드를 열어 준 금고를 저장
+	void SetOwningSafe(AKTSafe* InSafe);
+
+	// 키패드를 열 때 이전 입력값 초기화
+	void ResetPassword();
 };
