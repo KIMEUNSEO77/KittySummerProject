@@ -11,6 +11,7 @@
 #include "UI/KTSafeKeypadWidget.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
+#include "Item/KTItemPickupBase.h"
 
 // Sets default values
 AKTSafe::AKTSafe()
@@ -171,10 +172,15 @@ bool AKTSafe::TryUnlock(const FString& EnteredPassword)
 
 	bIsOpen = true;
 	bIsOpening = true;
+	
+	// 금고가 열리면 내부 아이템 획득을 허용
+	if (IsValid(RewardPickup))
+	{
+		RewardPickup->SetPickupInteractionEnabled(true);
+	}
 
 	// 문 애니메이션이 실행되도록 Tick을 실행
 	SetActorTickEnabled(true);
-
 	CloseKeypad();
 
 	if (GEngine)
@@ -218,5 +224,11 @@ void AKTSafe::BeginPlay()
 	
 	// 블루프린트에서 맞춰놓은 닫힌 문의 회전값을 저장
 	ClosedDoorRotation = DoorPivot->GetRelativeRotation();
+	
+	// 금고가 열리기 전에는 데이터칩을 획득할 수 없습니다.
+	if (IsValid(RewardPickup))
+	{
+		RewardPickup->SetPickupInteractionEnabled(false);
+	}
 }
 

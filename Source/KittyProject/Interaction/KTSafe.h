@@ -83,4 +83,8 @@ protected:
 
 	// 블루프린트에서 설정한 문의 최초 회전값
 	FRotator ClosedDoorRotation;
+	
+	// 금고가 열린 뒤 획득할 아이템
+	UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "Safe|Reward")
+	TObjectPtr<AKTItemPickupBase> RewardPickup;
 };
