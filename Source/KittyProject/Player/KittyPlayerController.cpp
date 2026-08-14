@@ -13,6 +13,8 @@
 #include "Inventory/KTInventoryComponent.h"
 #include "UI/KTInventoryWidget.h"
 #include "Kismet/GameplayStatics.h"
+#include "UI/KTExamineWidget.h"
+#include "Inventory/KTItemDataAsset.h"
 
 void AKittyPlayerController::BeginPlay()
 {
@@ -349,4 +351,129 @@ void AKittyPlayerController::HideObjectiveInteractionPrompt()
 			FText::GetEmpty()
 		);
 	}
+}
+
+void AKittyPlayerController::OpenExamine(
+	UKTItemDataAsset* ItemData)
+{
+	if (!IsLocalController() ||
+		bIsExamineOpen ||
+		bIsInventoryOpen ||
+		!IsValid(ItemData) ||
+		!ExamineWidgetClass)
+	{
+		return;
+	}
+
+	AKittyCharacterPlayer* PlayerCharacter =
+		Cast<AKittyCharacterPlayer>(GetPawn());
+
+	if (!IsValid(PlayerCharacter))
+	{
+		return;
+	}
+
+	if (!ExamineWidget)
+	{
+		ExamineWidget = CreateWidget<UKTExamineWidget>(
+			this,
+			ExamineWidgetClass
+		);
+
+		if (!ExamineWidget)
+		{
+			return;
+		}
+
+		ExamineWidget->OnCloseRequested.AddDynamic(
+			this,
+			&AKittyPlayerController::HandleExamineCloseRequested
+		);
+
+		ExamineWidget->AddToViewport(30);
+	}
+
+	ExamineWidget->SetItemData(ItemData);
+	ExamineWidget->SetVisibility(
+		ESlateVisibility::Visible
+	);
+	
+	ExamineWidget->PlayOpenAnimation();
+	
+	FInputModeGameAndUI InputMode;
+	InputMode.SetWidgetToFocus(
+		ExamineWidget->TakeWidget()
+	);
+
+	SetInputMode(InputMode);
+	bShowMouseCursor = false;
+
+	SetIgnoreMoveInput(true);
+	SetIgnoreLookInput(true);
+
+	PlayerCharacter->EnterInventoryCamera();
+
+	if (MissionTrackerWidget)
+	{
+		MissionTrackerWidget->SetVisibility(
+			ESlateVisibility::Collapsed
+		);
+	}
+
+	if (ObjectiveMarkerWidget)
+	{
+		ObjectiveMarkerWidget->SetVisibility(
+			ESlateVisibility::Collapsed
+		);
+	}
+
+	bIsExamineOpen = true;
+}
+
+void AKittyPlayerController::CloseExamine()
+{
+	if (!bIsExamineOpen)
+	{
+		return;
+	}
+
+	if (ExamineWidget)
+	{
+		ExamineWidget->SetVisibility(
+			ESlateVisibility::Collapsed
+		);
+	}
+
+	FInputModeGameOnly InputMode;
+	SetInputMode(InputMode);
+
+	SetIgnoreMoveInput(false);
+	SetIgnoreLookInput(false);
+
+	if (AKittyCharacterPlayer* PlayerCharacter =
+		Cast<AKittyCharacterPlayer>(GetPawn()))
+	{
+		PlayerCharacter->ExitInventoryCamera();
+	}
+
+	if (MissionTrackerWidget)
+	{
+		MissionTrackerWidget->SetVisibility(
+			ESlateVisibility::Visible
+		);
+	}
+
+	if (ObjectiveMarkerWidget)
+	{
+		ObjectiveMarkerWidget->SetVisibility(
+			ESlateVisibility::Visible
+		);
+	}
+
+	bIsExamineOpen = false;
+}
+
+void AKittyPlayerController::HandleExamineCloseRequested()
+{
+	CloseExamine();
 }

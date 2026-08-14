@@ -14,6 +14,8 @@ class UKTInventoryWidget;
 class UKTObjectiveMarkerWidget;
 class UKTMissionSubsystem;
 class UKTMissionDataAsset;
+class UKTExamineWidget;
+class UKTItemDataAsset;
 
 /**
  * 
@@ -84,6 +86,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	void CloseInventory();
 
+	UFUNCTION(BlueprintCallable, Category = "Examine")
+	void OpenExamine(UKTItemDataAsset* ItemData);
+
+	UFUNCTION(BlueprintCallable, Category = "Examine")
+	void CloseExamine();
+	
 	UFUNCTION(BlueprintPure, Category = "Inventory")
 	bool IsInventoryOpen() const
 	{
@@ -107,6 +115,17 @@ protected:
 
 	UPROPERTY()
 	TObjectPtr<UKTInventoryWidget> InventoryWidget;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI|Examine")
+	TSubclassOf<UKTExamineWidget> ExamineWidgetClass;
+
+	UPROPERTY()
+	TObjectPtr<UKTExamineWidget> ExamineWidget;
+
+	bool bIsExamineOpen = false;
+
+	UFUNCTION()
+	void HandleExamineCloseRequested();
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound|Inventory")
     TObjectPtr<class USoundBase> InventoryOpenSound;
