@@ -40,6 +40,12 @@ void UKTMissionSubsystem::BroadcastMissionEvent(
     FGameplayTag EventTag,
     AActor* InstigatorActor)
 {
+    if (!EventTag.IsValid())
+    {
+        return;
+    }
+    OnMissionEventReceived.Broadcast(EventTag, InstigatorActor);
+    
     if (bIsTransitioning)
     {
         return;

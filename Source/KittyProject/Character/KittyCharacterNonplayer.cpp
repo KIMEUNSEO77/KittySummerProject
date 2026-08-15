@@ -5,6 +5,7 @@
 #include "AI/KittyAIController.h"
 #include "Animation/AnimMontage.h"
 #include "Components/CapsuleComponent.h"
+#include "Engine/TargetPoint.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Item/KTItemPickupBase.h"
@@ -213,4 +214,25 @@ void AKittyCharacterNonplayer::DebugKill()
 	DeathDirection = DebugDirection;
 	
 	Die(GetDeathMontage(DeathDirection));
+}
+
+void AKittyCharacterNonplayer::ConfigurePatrolRoute(const TArray<ATargetPoint*>& InPatrolPoints)
+{
+	PatrolPoints.Reset();
+	
+	for (ATargetPoint* Point : InPatrolPoints)
+	{
+		if (IsValid(Point))
+		{
+			PatrolPoints.Add(Point);
+		}
+	}
+	
+	bPatrolEnabled = !PatrolPoints.IsEmpty();
+	
+	if (AKittyAIController* AIController = Cast<AKittyAIController>(GetController()))
+	{
+		AIController->StopAI();
+		AIController->RunAI();
+	}
 }
