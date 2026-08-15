@@ -353,6 +353,36 @@ void AKittyPlayerController::HideObjectiveInteractionPrompt()
 	}
 }
 
+void AKittyPlayerController::SetGameplayUIVisible(bool bVisible)
+{
+	const ESlateVisibility NewVisibility = bVisible ? ESlateVisibility::Visible : ESlateVisibility::Collapsed;
+
+	if (MissionTrackerWidget)
+	{
+		MissionTrackerWidget->SetVisibility(NewVisibility);
+	}
+
+	if (ObjectiveMarkerWidget)
+	{
+		ObjectiveMarkerWidget->SetVisibility(NewVisibility);
+	}
+
+	if (MissionNotificationWidget)
+	{
+		MissionNotificationWidget->SetVisibility(NewVisibility);
+	}
+
+	if (InventoryWidget)
+	{
+		InventoryWidget->SetVisibility(NewVisibility);
+	}
+
+	if (ExamineWidget)
+	{
+		ExamineWidget->SetVisibility(NewVisibility);
+	}
+}
+
 void AKittyPlayerController::OpenExamine(
 	UKTItemDataAsset* ItemData)
 {

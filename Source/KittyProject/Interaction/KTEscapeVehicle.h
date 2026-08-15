@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Interface/KTInteractableInterface.h"
+#include "GameplayTagContainer.h"
 #include "KTEscapeVehicle.generated.h"
 
 UCLASS()
@@ -18,6 +19,10 @@ public:
 	
 	virtual void Interact_Implementation(AActor* Interactor) override;
 	virtual FText GetInteractionText_Implementation() const override;
+	
+	// 시네마틱 재생이 끝났을 때 호출
+	UFUNCTION()
+	void HandleSequenceFinished();
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Vehicle|Components")
@@ -41,4 +46,16 @@ protected:
 	// F키를 눌렀을 때 재생할 엔딩 시네마틱
 	UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "Vehicle|Cinematic")
 	TObjectPtr<class ALevelSequenceActor> EscapeSequenceActor;
+	
+	// 마지막 미션 Step을 완료할 이벤트 태그
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Vehicle|Mission")
+	FGameplayTag EscapeCompletedEventTag;
+
+	// 화면이 검게 변하는 데 걸리는 시간
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Vehicle|Ending")
+	float FadeDuration = 2.0f;
+
+	// 엔딩을 시작한 플레이어 컨트롤러
+	UPROPERTY()
+	TObjectPtr<class APlayerController> EndingPlayerController;
 };

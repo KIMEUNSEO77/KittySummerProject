@@ -10,6 +10,9 @@
 #include "LevelSequencePlayer.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
+#include "Camera/PlayerCameraManager.h"
+#include "Mission/KTMissionSubsystem.h"
+#include "Player/KittyPlayerController.h"
 
 // Sets default values
 AKTEscapeVehicle::AKTEscapeVehicle()
@@ -78,6 +81,9 @@ void AKTEscapeVehicle::Interact_Implementation(AActor* Interactor)
 	{
 		return;
 	}
+	
+	// 시네마틱 종료 후 페이드아웃에 사용할 컨트롤러 저장
+	EndingPlayerController = PlayerController;
 
 	bHasStartedEnding = true;
 
@@ -92,6 +98,14 @@ void AKTEscapeVehicle::Interact_Implementation(AActor* Interactor)
 	// 외부 카메라 연출이므로 캐릭터를 숨김
 	PlayerPawn->SetActorHiddenInGame(true);
 	PlayerPawn->SetActorEnableCollision(false);
+	
+	// 시네마틱 시작 전에 UMG UI 숨기기
+	AKittyPlayerController* KittyPlayerController = Cast<AKittyPlayerController>(PlayerController);
+
+	if (IsValid(KittyPlayerController))
+	{
+		KittyPlayerController->SetGameplayUIVisible(false);
+	}
 
 	// 이동과 카메라 조작을 막고 시네마틱 모드로 전환
 	PlayerController->SetCinematicMode(
@@ -102,11 +116,46 @@ void AKTEscapeVehicle::Interact_Implementation(AActor* Interactor)
 		true   // 시점 회전 제한
 	);
 
+	// 같은 이벤트가 중복으로 연결되지 않도록 기존 연결 제거
+	SequencePlayer->OnFinished.RemoveDynamic(this, &AKTEscapeVehicle::HandleSequenceFinished);
+
+	// 시네마틱이 끝나면 HandleSequenceFinished 호출
+	SequencePlayer->OnFinished.AddDynamic(this, &AKTEscapeVehicle::HandleSequenceFinished);
+
 	SequencePlayer->Play();
 }
 
 FText AKTEscapeVehicle::GetInteractionText_Implementation() const
 {
 	return FText::FromString(TEXT("[F] 차량에 탑승하기"));
+}
+
+void AKTEscapeVehicle::HandleSequenceFinished()
+{
+	if (EscapeCompletedEventTag.IsValid())
+	{
+		if (UKTMissionSubsystem* MissionSubsystem =
+			UKTMissionSubsystem::Get(this))
+		{
+			MissionSubsystem->BroadcastMissionEvent(
+				EscapeCompletedEventTag,
+				this
+			);
+		}
+	}
+
+	if (!IsValid(EndingPlayerController) ||
+		!IsValid(EndingPlayerController->PlayerCameraManager))
+	{
+		return;
+	}
+
+	// Sequencer에서 완성된 검은 화면을 그대로 유지
+	EndingPlayerController->PlayerCameraManager
+		->SetManualCameraFade(
+			1.0f,
+			FLinearColor::Black,
+			false
+		);
 }
 
