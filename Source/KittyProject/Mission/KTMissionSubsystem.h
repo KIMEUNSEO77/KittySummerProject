@@ -38,12 +38,13 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
 	InstigatorActor
 );
 
-UCLASS()
+UCLASS(BlueprintType)
 class KITTYPROJECT_API UKTMissionSubsystem : public UWorldSubsystem
 {
 	GENERATED_BODY()
 
 public:
+	UFUNCTION(BlueprintPure, Category = "Mission", meta = (WorldContext = "WorldContextObject", DisPlayName = "Get KT Mission Subsystem"))
 	static UKTMissionSubsystem* Get(const UObject* WorldContextObject);
 
 	UFUNCTION(BlueprintCallable, Category = "Mission")
