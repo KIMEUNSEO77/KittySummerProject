@@ -107,6 +107,9 @@ public:
 
 	// 일반 목적지 마커 상태로 되돌립니다.
 	void HideObjectiveInteractionPrompt();
+	
+	// 시네마틱 실행 중 게임 UI를 숨기거나 다시 표시
+	void SetGameplayUIVisible(bool bVisible);
 
 	
 protected:

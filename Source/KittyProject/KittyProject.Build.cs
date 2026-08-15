@@ -10,7 +10,8 @@ public class KittyProject : ModuleRules
 		
 		PublicIncludePaths.AddRange(new string[] {"KittyProject"});
 	
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "UMG", "NavigationSystem", "AIModule", "GameplayTasks","GameplayTags", "Niagara" });
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "UMG", "NavigationSystem", "AIModule", "GameplayTasks","GameplayTags", "Niagara", "LevelSequence",
+			"MovieScene" });
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });
 
