@@ -37,4 +37,8 @@ protected:
 
 	// 엔딩이 중복 실행되지 않도록 확인
 	bool bHasStartedEnding = false;
+	
+	// F키를 눌렀을 때 재생할 엔딩 시네마틱
+	UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "Vehicle|Cinematic")
+	TObjectPtr<class ALevelSequenceActor> EscapeSequenceActor;
 };
