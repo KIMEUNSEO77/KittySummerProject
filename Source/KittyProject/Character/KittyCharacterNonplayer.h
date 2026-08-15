@@ -120,4 +120,8 @@ private:
 	// 허리에 붙어 있는 아이템
 	UPROPERTY()
 	TObjectPtr<class AKTItemPickupBase> CarriedItem;
+	
+public:
+	UFUNCTION(BlueprintCallable, Category = "AI|Patrol")
+	void ConfigurePatrolRoute(const TArray<ATargetPoint*>& InPatrolPoints);
 };
