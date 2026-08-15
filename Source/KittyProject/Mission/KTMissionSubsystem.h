@@ -30,6 +30,14 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
 	NextStep
 );
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
+	FOnMissionEventReceived,
+	FGameplayTag,
+	EventTag,
+	AActor*,
+	InstigatorActor
+);
+
 UCLASS()
 class KITTYPROJECT_API UKTMissionSubsystem : public UWorldSubsystem
 {
@@ -68,6 +76,9 @@ public:
 
 	UPROPERTY(BlueprintAssignable, Category = "Mission")
 	FOnMissionNextStepQueued OnMissionNextStepQueued;
+	
+	UPROPERTY(BlueprintAssignable, Category = "Mission")
+	FOnMissionEventReceived OnMissionEventReceived;
 	
 private:
 	void BroadcastCurrentStep();
