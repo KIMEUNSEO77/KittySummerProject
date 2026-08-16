@@ -62,4 +62,7 @@ protected:
 	// 차량 탑승 후 플레이어가 재생할 운전 애니메이션
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Vehicle|Animation")
 	TObjectPtr<class UAnimationAsset> DrivingAnimation;
+	
+	// 엔딩 시네마틱 종료 후 게임 종료
+	void QuitGameAfterEnding();
 };

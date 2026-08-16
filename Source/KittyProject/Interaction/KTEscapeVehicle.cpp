@@ -16,6 +16,8 @@
 #include "Animation/AnimationAsset.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "GameFramework/Character.h"
+#include "Kismet/KismetSystemLibrary.h"
+#include "TimerManager.h"
 
 // Sets default values
 AKTEscapeVehicle::AKTEscapeVehicle()
@@ -176,5 +178,15 @@ void AKTEscapeVehicle::HandleSequenceFinished()
 			FLinearColor::Black,
 			false
 		);
+	
+	// 1초 뒤 게임 종료
+	FTimerHandle QuitTimerHandle;
+
+	GetWorldTimerManager().SetTimer(QuitTimerHandle, this, &AKTEscapeVehicle::QuitGameAfterEnding, 1.0f, false);
+}
+
+void AKTEscapeVehicle::QuitGameAfterEnding()
+{
+	UKismetSystemLibrary::QuitGame(this, EndingPlayerController, EQuitPreference::Quit, false);
 }
 
