@@ -121,7 +121,7 @@ FText AKTSafe::GetInteractionText_Implementation() const
 		return FText::FromString(TEXT("금고가 열려 있습니다"));
 	}
 
-	return FText::FromString(TEXT("[F] 금고 비밀번호 입력하기"));
+	return FText::FromString(TEXT("금고 비밀번호 입력하기"));
 }
 
 void AKTSafe::Tick(float DeltaTime)

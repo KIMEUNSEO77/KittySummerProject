@@ -6,6 +6,9 @@
 #include "Blueprint/UserWidget.h"
 #include "KTSafeKeypadWidget.generated.h"
 
+class UButton;
+class UTextBlock;
+class AKTSafe;
 /**
  * 
  */

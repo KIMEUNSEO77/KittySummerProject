@@ -7,6 +7,8 @@
 #include "Interface/KTInteractableInterface.h"
 #include "KTSafe.generated.h"
 
+class AKTItemPickupBase;
+
 UCLASS()
 class KITTYPROJECT_API AKTSafe : public AActor, public IKTInteractableInterface
 {
