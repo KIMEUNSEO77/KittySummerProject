@@ -58,6 +58,7 @@ private:
 		FVector Start;
 		FVector End;
 		float StartDelay = 0.0f;
+		float SpeedMultiplier = 1.0f;
 	};
 
 	void StartCinematic();

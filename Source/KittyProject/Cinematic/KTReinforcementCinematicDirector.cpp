@@ -130,12 +130,16 @@ void AKTReinforcementCinematicDirector::StartCinematic()
 	const FVector RouteDirection = (RunEnd - RunStart).GetSafeNormal2D();
 	const FVector RouteRight(-RouteDirection.Y, RouteDirection.X, 0.0f);
 	const float LaneOffsets[3] = {-210.0f, 0.0f, 210.0f};
+	FRandomStream GuardVariationRandom(9127);
 
 	for (int32 GuardIndex = 0; GuardIndex < SafeGuardCount; ++GuardIndex)
 	{
 		const int32 Row = GuardIndex / 3;
 		const int32 Lane = GuardIndex % 3;
-		const float Stagger = Row * 0.16f + Lane * 0.045f;
+		const float Stagger = FMath::Max(
+			0.0f,
+			Row * 0.16f + Lane * 0.045f +
+				GuardVariationRandom.FRandRange(-0.08f, 0.12f));
 		const float TrailingDistance = Row * 145.0f;
 		const FVector LaneOffset = RouteRight * LaneOffsets[Lane];
 
@@ -143,6 +147,7 @@ void AKTReinforcementCinematicDirector::StartCinematic()
 		State.Start = RunStart + LaneOffset - RouteDirection * TrailingDistance;
 		State.End = RunEnd + LaneOffset - RouteDirection * (Row * 55.0f);
 		State.StartDelay = Stagger;
+		State.SpeedMultiplier = GuardVariationRandom.FRandRange(0.84f, 1.16f);
 
 		if (CinematicGuardClass)
 		{
@@ -170,6 +175,7 @@ void AKTReinforcementCinematicDirector::StartCinematic()
 					{
 						Mesh->SetAnimationMode(EAnimationMode::AnimationSingleNode);
 						Mesh->PlayAnimation(RunningAnimation, true);
+						Mesh->SetPlayRate(State.SpeedMultiplier);
 					}
 				}
 			}
@@ -223,14 +229,14 @@ void AKTReinforcementCinematicDirector::UpdateGuards()
 			continue;
 		}
 
-		const float AvailableTime =
-			FMath::Max(0.1f, MovementEndTime - State.StartDelay);
-		const float Alpha = FMath::Clamp(
-			(ElapsedTime - State.StartDelay) / AvailableTime,
-			0.0f,
-			1.0f);
-		const FVector Position = FMath::Lerp(State.Start, State.End, Alpha);
 		const FVector Direction = (State.End - State.Start).GetSafeNormal2D();
+		const float RouteLength = FVector::Dist2D(State.Start, State.End);
+		const float BaseSpeed = RouteLength / MovementEndTime;
+		const float ActiveRunTime = FMath::Max(
+			0.0f,
+			ElapsedTime - State.StartDelay);
+		const FVector Position = State.Start +
+			Direction * BaseSpeed * State.SpeedMultiplier * ActiveRunTime;
 		const FRotator GuardRotation =
 			Direction.Rotation() + FRotator(0.0f, GuardVisualYawOffset, 0.0f);
 		GuardActor->SetActorLocationAndRotation(
@@ -274,11 +280,11 @@ void AKTReinforcementCinematicDirector::UpdateCamera()
 	{
 		const float ShotAlpha = (NormalizedTime - 0.34f) / 0.38f;
 		CameraLocation = FMath::Lerp(
-			FVector(-10950.0f, 5720.0f, 650.0f),
-			FVector(-10320.0f, 5550.0f, 610.0f),
+			FVector(-11050.0f, 6200.0f, 1250.0f),
+			FVector(-10250.0f, 6000.0f, 1100.0f),
 			ShotAlpha);
-		LookTarget = FormationCenter + FVector(100.0f, 0.0f, 105.0f);
-		FieldOfView = 43.0f;
+		LookTarget = FormationCenter + FVector(100.0f, 0.0f, 80.0f);
+		FieldOfView = 48.0f;
 	}
 	else
 	{
