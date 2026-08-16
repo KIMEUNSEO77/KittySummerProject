@@ -58,4 +58,11 @@ protected:
 	// 엔딩을 시작한 플레이어 컨트롤러
 	UPROPERTY()
 	TObjectPtr<class APlayerController> EndingPlayerController;
+	
+	// 차량 탑승 후 플레이어가 재생할 운전 애니메이션
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Vehicle|Animation")
+	TObjectPtr<class UAnimationAsset> DrivingAnimation;
+	
+	// 엔딩 시네마틱 종료 후 게임 종료
+	void QuitGameAfterEnding();
 };
