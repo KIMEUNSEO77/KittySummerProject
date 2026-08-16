@@ -13,6 +13,9 @@
 #include "Camera/PlayerCameraManager.h"
 #include "Mission/KTMissionSubsystem.h"
 #include "Player/KittyPlayerController.h"
+#include "Animation/AnimationAsset.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "GameFramework/Character.h"
 
 // Sets default values
 AKTEscapeVehicle::AKTEscapeVehicle()
@@ -90,14 +93,30 @@ void AKTEscapeVehicle::Interact_Implementation(AActor* Interactor)
 	// 다시 상호작용하지 못하도록 Collision을 끔
 	InteractionCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
-	// 플레이어를 운전석 위치로 이동시킨 후 차량에 붙임
-	PlayerPawn->SetActorLocationAndRotation(DriverSeatPoint->GetComponentLocation(), DriverSeatPoint->GetComponentRotation());
+	// 플레이어를 운전석 위치에 부착
+	PlayerPawn->AttachToComponent(DriverSeatPoint, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
 
-	PlayerPawn->AttachToComponent(VehicleMesh, FAttachmentTransformRules::KeepWorldTransform);
+	// 시네마틱에서 플레이어를 표시
+	PlayerPawn->SetActorHiddenInGame(false);
 
-	// 외부 카메라 연출이므로 캐릭터를 숨김
-	PlayerPawn->SetActorHiddenInGame(true);
+	// 차량과 충돌해서 튕기지 않도록 플레이어 충돌을 끔
 	PlayerPawn->SetActorEnableCollision(false);
+
+	// 플레이어 캐릭터의 Skeletal Mesh를 가져옴
+	ACharacter* PlayerCharacter = Cast<ACharacter>(PlayerPawn);
+
+	if (IsValid(PlayerCharacter) && DrivingAnimation)
+	{
+		USkeletalMeshComponent* PlayerMesh = PlayerCharacter->GetMesh();
+
+		if (IsValid(PlayerMesh))
+		{
+			// 기존 Anim Blueprint 대신 운전 애니메이션을 반복 재생
+			PlayerMesh->SetAnimationMode(EAnimationMode::AnimationSingleNode);
+
+			PlayerMesh->PlayAnimation(DrivingAnimation, true);
+		}
+	}
 	
 	// 시네마틱 시작 전에 UMG UI 숨기기
 	AKittyPlayerController* KittyPlayerController = Cast<AKittyPlayerController>(PlayerController);
