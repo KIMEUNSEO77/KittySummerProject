@@ -8,6 +8,8 @@
 #include "Components/StaticMeshComponent.h"
 #include "Engine/Engine.h"
 #include "Components/WidgetComponent.h"
+#include "Mission/KTMissionSubsystem.h"
+#include "GameplayTagContainer.h"
 
 // Sets default values
 AKTCommunicationTerminal::AKTCommunicationTerminal()
@@ -73,7 +75,24 @@ void AKTCommunicationTerminal::Interact_Implementation(AActor* Interactor)
 	{
 		HologramWidget->SetVisibility(true);
 	}
+	// 통신 단말기 조사 완료 이벤트 전송
+	if (UKTMissionSubsystem* MissionSubsystem =
+		UKTMissionSubsystem::Get(this))
+	{
+		const FGameplayTag TerminalExaminedTag =
+			FGameplayTag::RequestGameplayTag(
+				FName(
+					"Mission.Event.Examine."
+					"CommunicationTerminal.Completed"
+				)
+			);
 
+		MissionSubsystem->BroadcastMissionEvent(
+			TerminalExaminedTag,
+			Interactor
+		);
+	}
+	
 	if (GEngine)
 	{
 		GEngine->AddOnScreenDebugMessage(
@@ -87,6 +106,6 @@ void AKTCommunicationTerminal::Interact_Implementation(AActor* Interactor)
 
 FText AKTCommunicationTerminal::GetInteractionText_Implementation() const
 {
-	return FText::FromString(TEXT("[F] 통신 단말기 조사하기"));
+	return FText::FromString(TEXT("통신 단말기 조사하기"));
 }
 
