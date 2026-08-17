@@ -148,7 +148,7 @@ void AKTEscapeVehicle::Interact_Implementation(AActor* Interactor)
 
 FText AKTEscapeVehicle::GetInteractionText_Implementation() const
 {
-	return FText::FromString(TEXT("[F] 차량에 탑승하기"));
+	return FText::FromString(TEXT("차량에 탑승하기"));
 }
 
 void AKTEscapeVehicle::HandleSequenceFinished()

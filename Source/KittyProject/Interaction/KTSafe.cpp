@@ -12,6 +12,8 @@
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
 #include "Item/KTItemPickupBase.h"
+#include "Mission/KTMissionSubsystem.h"
+#include "GameplayTagContainer.h"
 
 // Sets default values
 AKTSafe::AKTSafe()
@@ -173,6 +175,20 @@ bool AKTSafe::TryUnlock(const FString& EnteredPassword)
 	bIsOpen = true;
 	bIsOpening = true;
 	
+	if (UKTMissionSubsystem* MissionSubsystem =
+        UKTMissionSubsystem::Get(this))
+    {
+        const FGameplayTag SafeUnlockedTag =
+            FGameplayTag::RequestGameplayTag(
+                FName("Mission.Event.Safe.Unlocked")
+            );
+    
+        MissionSubsystem->BroadcastMissionEvent(
+            SafeUnlockedTag,
+            this
+        );
+    }
+    
 	// 금고가 열리면 내부 아이템 획득을 허용
 	if (IsValid(RewardPickup))
 	{
