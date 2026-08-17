@@ -431,7 +431,15 @@ void AKittyCharacterPlayer::Interact()
 	{
 		return;
 	}
-
+	
+	if (InteractionSound)
+	{
+		UGameplayStatics::PlaySound2D(
+			this,
+			InteractionSound
+		);
+	}
+	
 	// 인터페이스를 통해 대상의 상호작용 함수 호출
 	IKTInteractableInterface::Execute_Interact(CurrentInteractable, this);
 

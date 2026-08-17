@@ -112,6 +112,13 @@ protected:
 	
 	// Interaction Section
 protected:
+	UPROPERTY(
+	EditDefaultsOnly,
+	BlueprintReadOnly,
+	Category = "Interaction|Sound"
+)
+	TObjectPtr<class USoundBase> InteractionSound;
+	
 	// 매 프레임 플레이어가 바라보는 상호작용 대상을 검사
 	void CheckForInteractable();
 

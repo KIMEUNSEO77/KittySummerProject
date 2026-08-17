@@ -113,6 +113,22 @@ void AKittyPlayerController::HandleMissionNextStepQueued(
 	FText MissionTitle,
 	FMissionStep NextStep)
 {
+	if (NewMissionSound)
+	{
+		UGameplayStatics::PlaySound2D(
+			this,
+			NewMissionSound
+		);
+	}
+
+	if (MissionNotificationWidget)
+	{
+		MissionNotificationWidget->ShowNewMission(
+			MissionTitle,
+			NextStep.Description
+		);
+	}
+	
 	if (MissionNotificationWidget)
 	{
 		MissionNotificationWidget->ShowNewMission(

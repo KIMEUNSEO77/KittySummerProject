@@ -75,6 +75,12 @@ protected:
 		FMissionStep NextStep
 	);
 	
+	UPROPERTY(
+	EditDefaultsOnly,
+	BlueprintReadOnly,
+	Category = "Sound|Mission"
+)
+	TObjectPtr<class USoundBase> NewMissionSound;
 public:
 	// 플레이어 입력으로 인벤토리를 열고 닫습니다.
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
