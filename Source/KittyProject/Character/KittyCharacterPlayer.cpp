@@ -594,10 +594,10 @@ void AKittyCharacterPlayer::PerformFireTrace()
 		);
 	}
 
-	if (IsValid(HitActor) && GEngine)
-	{
-		GEngine->AddOnScreenDebugMessage(20, 1.5f, FColor::Cyan, FString::Printf(TEXT("명중: %s"), *HitActor->GetName()));
-	}
+	//if (IsValid(HitActor) && GEngine)
+	//{
+		//GEngine->AddOnScreenDebugMessage(20, 1.5f, FColor::Cyan, FString::Printf(TEXT("명중: %s"), *HitActor->GetName()));
+	//}
 }
 
 void AKittyCharacterPlayer::ToggleInventory()
