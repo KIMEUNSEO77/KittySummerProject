@@ -13,7 +13,7 @@
 #include "GameFramework/DamageType.h"
 #include "GameFramework/Pawn.h"
 #include "Kismet/GameplayStatics.h"
-
+#include "Engine/HitResult.h"
 
 // Sets default values for this component's properties
 UKTBatonAttackComponent::UKTBatonAttackComponent()
@@ -35,6 +35,11 @@ bool UKTBatonAttackComponent::StartAttack(AActor* Target)
 	}
 	
 	AttackTarget = Target;
+	
+	// 새로운 공격을 시작하므로 판정 상태를 초기화한다.
+	bHitWindowActive = false;
+	bDamageApplied = false;
+	PreviousHitCenter = FVector::ZeroVector;
 	
 	const float MontageDuration = Guard->PlayAnimMontage(AttackMontage);
 	
@@ -63,13 +68,48 @@ bool UKTBatonAttackComponent::IsAttacking() const
 
 void UKTBatonAttackComponent::HandleHitNotify()
 {
-	ACharacter* Guard = Cast<ACharacter>(GetOwner());
-	AActor* IntendedTarget = AttackTarget.Get();
+	// Notify State가 실행 중이라면 단일 Notify는 무시한다.
+	if (bHitWindowActive)
+	{
+		return;
+	}
 
-	// 이 공격의 타격 기회는 Notify 한 번뿐이다.
-	AttackTarget.Reset();
+	BeginHitWindow();
+	UpdateHitWindow();
+	EndHitWindow();
+}
 
-	if (!IsValid(Guard) || !IsValid(IntendedTarget))
+void UKTBatonAttackComponent::BeginHitWindow()
+{
+	AActor* Target = AttackTarget.Get();
+	
+	if (!IsValid(Target))
+	{
+		bHitWindowActive = false;
+		return;
+	}
+	
+	PreviousHitCenter = GetHitCenter();
+	
+	bHitWindowActive = true;
+	bDamageApplied = false;
+}
+
+void UKTBatonAttackComponent::UpdateHitWindow()
+{
+	if (!bHitWindowActive)
+	{
+		return;
+	}
+
+	ACharacter* Guard =
+		Cast<ACharacter>(GetOwner());
+
+	AActor* IntendedTarget =
+		AttackTarget.Get();
+
+	if (!IsValid(Guard)
+		|| !IsValid(IntendedTarget))
 	{
 		return;
 	}
@@ -81,18 +121,8 @@ void UKTBatonAttackComponent::HandleHitNotify()
 		return;
 	}
 
-	FVector HitCenter;
-
-	if (Guard->GetMesh()->DoesSocketExist(HitSocketName))
-	{
-		HitCenter =
-			Guard->GetMesh()->GetSocketLocation(HitSocketName);
-	}
-	else
-	{
-		HitCenter =
-			Guard->GetActorTransform().TransformPosition(HitOffset);
-	}
+	const FVector CurrentHitCenter =
+		GetHitCenter();
 
 	FCollisionObjectQueryParams ObjectParams;
 	ObjectParams.AddObjectTypesToQuery(ECC_Pawn);
@@ -100,39 +130,31 @@ void UKTBatonAttackComponent::HandleHitNotify()
 	FCollisionQueryParams QueryParams;
 	QueryParams.AddIgnoredActor(Guard);
 
-	TArray<FOverlapResult> OverlapResults;
+	TArray<FHitResult> HitResults;
 
-	const bool bOverlapped =
-		World->OverlapMultiByObjectType(
-			OverlapResults,
-			HitCenter,
-			FQuat::Identity,
-			ObjectParams,
-			FCollisionShape::MakeSphere(HitRadius),
-			QueryParams
-		);
-
-	// 맞았는지와 관계없이 구체를 표시한다.
-	DrawDebugSphere(
-		World,
-		HitCenter,
-		HitRadius,
-		16,
-		bOverlapped ? FColor::Green : FColor::Red,
-		false,
-		1.0f
+	World->SweepMultiByObjectType(
+		HitResults,
+		PreviousHitCenter,
+		CurrentHitCenter,
+		FQuat::Identity,
+		ObjectParams,
+		FCollisionShape::MakeSphere(HitRadius),
+		QueryParams
 	);
 
-	if (!bOverlapped)
-	{
-		return;
-	}
+	bool bTargetInSweep = false;
 
-	for (const FOverlapResult& Result : OverlapResults)
+	for (const FHitResult& HitResult : HitResults)
 	{
-		APawn* HitPawn = Cast<APawn>(Result.GetActor());
+		APawn* HitPawn =
+			Cast<APawn>(HitResult.GetActor());
 
-		if (!HitPawn || !HitPawn->IsPlayerControlled())
+		if (!IsValid(HitPawn))
+		{
+			continue;
+		}
+
+		if (!HitPawn->IsPlayerControlled())
 		{
 			continue;
 		}
@@ -142,14 +164,83 @@ void UKTBatonAttackComponent::HandleHitNotify()
 			continue;
 		}
 
-		UGameplayStatics::ApplyDamage(
-			HitPawn,
-			Damage,
-			Guard->GetController(),
-			Guard,
-			UDamageType::StaticClass()
-		);
+		bTargetInSweep = true;
+
+		// Sweep은 계속 실행하지만 데미지는 한 번만 준다.
+		if (!bDamageApplied)
+		{
+			UGameplayStatics::ApplyDamage(
+				HitPawn,
+				Damage,
+				Guard->GetController(),
+				Guard,
+				UDamageType::StaticClass()
+			);
+
+			bDamageApplied = true;
+		}
 
 		break;
 	}
+
+	DrawDebugLine(
+		World,
+		PreviousHitCenter,
+		CurrentHitCenter,
+		FColor::Yellow,
+		false,
+		0.1f,
+		0,
+		2.0f
+	);
+
+	DrawDebugSphere(
+		World,
+		PreviousHitCenter,
+		HitRadius,
+		12,
+		FColor::Orange,
+		false,
+		0.1f
+	);
+
+	DrawDebugSphere(
+		World,
+		CurrentHitCenter,
+		HitRadius,
+		12,
+		bTargetInSweep
+			? FColor::Green
+			: FColor::Red,
+		false,
+		0.1f
+	);
+
+	// 맞은 뒤에도 계속 갱신해야 한다.
+	PreviousHitCenter = CurrentHitCenter;
+}
+
+FVector UKTBatonAttackComponent::GetHitCenter() const
+{
+	const ACharacter* Guard =
+	Cast<ACharacter>(GetOwner());
+
+	if (!IsValid(Guard))
+	{
+		return FVector::ZeroVector;
+	}
+
+	const USkeletalMeshComponent* Mesh =
+		Guard->GetMesh();
+
+	if (IsValid(Mesh)
+		&& Mesh->DoesSocketExist(HitSocketName))
+	{
+		return Mesh->GetSocketLocation(HitSocketName);
+	}
+
+	// 소켓이 없으면 경비원 앞쪽 고정 위치를 사용한다.
+	return Guard->GetActorTransform().TransformPosition(
+		HitOffset
+	);
 }

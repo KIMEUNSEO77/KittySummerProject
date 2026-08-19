@@ -43,6 +43,21 @@ EBTNodeResult::Type UBTTask_GuardAttack::ExecuteTask(UBehaviorTreeComponent& Own
 	
 	AIController->StopMovement();
 	
+	FVector DirectionToTarget =
+	Target->GetActorLocation() - Guard->GetActorLocation();
+
+	DirectionToTarget.Z = 0.0f;
+
+	if (!DirectionToTarget.IsNearlyZero())
+	{
+		const float TargetYaw =
+			DirectionToTarget.Rotation().Yaw;
+
+		Guard->SetActorRotation(
+			FRotator(0.0f, TargetYaw, 0.0f)
+		);
+	}
+	
 	if (!AttackComponent->StartAttack(Target))
 	{
 		return EBTNodeResult::Failed;
