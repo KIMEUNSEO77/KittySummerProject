@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "AI/Attack/KTBatonAttackComponent.h"
 #include "Character/KittyCharacterBase.h"
 #include "Interface/KittyCharacterAIInterface.h"
 #include "KittyCharacterNonplayer.generated.h"
@@ -22,6 +23,13 @@ enum class EKittyDeathDirection : uint8
 	Back  UMETA(DisplayName = "Back"),
 	Left  UMETA(DisplayName = "Left"),
 	Right UMETA(DisplayName = "Right")
+};
+
+UENUM(BlueprintType)
+enum class EGuardWeaponType : uint8
+{
+	Baton UMETA(DisplayName = "Baton"),
+	Gun UMETA(DisplayName = "Gun")
 };
 
 UCLASS()
@@ -61,7 +69,6 @@ protected:
 protected:
 	virtual float GetAIPatrolRadius() override;
 	virtual float GetAIDetectRange() override;
-	virtual float GetAIAttackRange() override;
 	virtual float GetAITurnSpeed() override;	
 	
 private:
@@ -124,4 +131,16 @@ private:
 public:
 	UFUNCTION(BlueprintCallable, Category = "AI|Patrol")
 	void ConfigurePatrolRoute(const TArray<ATargetPoint*>& InPatrolPoints);
+	
+public:
+	//경비원의 공격 타입 설정을 위한 섹션
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Attack", meta = (AllowPrivateAccess = "true"))
+	EGuardWeaponType GuardWeaponType = EGuardWeaponType::Baton;
+	
+	UPROPERTY(VisibleAnywhereAnywhere, BlueprintReadOnly, Category = "AI|Attack", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UKTBatonAttackComponent> BatonAttackComponent;
+
+	UKTGuardAttackComponent* GetAttackComponent() const;
+	
+	virtual float GetAIAttackRange() override;
 };

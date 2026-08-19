@@ -45,6 +45,8 @@ AKittyCharacterNonplayer::AKittyCharacterNonplayer()
 	{
 		RightDeathMontage = RightDeathMontageRef.Object;
 	}
+	
+	BatonAttackComponent = CreateDefaultSubobject<UKTBatonAttackComponent>(TEXT("BatonAttackComponent"));
 }
 
 void AKittyCharacterNonplayer::BeginPlay()
@@ -108,9 +110,25 @@ float AKittyCharacterNonplayer::GetAIDetectRange()
 	return 400.0f;
 }
 
+UKTGuardAttackComponent* AKittyCharacterNonplayer::GetAttackComponent() const
+{
+	switch (GuardWeaponType)
+	{
+	case EGuardWeaponType::Baton:
+		return BatonAttackComponent;
+		
+	case EGuardWeaponType::Gun:
+		return nullptr;
+		
+	default:
+		return nullptr;
+	}
+}
+
 float AKittyCharacterNonplayer::GetAIAttackRange()
 {
-	return 0.0f;
+	const UKTGuardAttackComponent* AttackComponent = GetAttackComponent();
+	return AttackComponent ? AttackComponent->GetAttackRange : 0.0f;
 }
 
 float AKittyCharacterNonplayer::GetAITurnSpeed()
