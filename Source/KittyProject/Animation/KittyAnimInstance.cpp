@@ -2,6 +2,7 @@
 
 
 #include "Animation/KittyAnimInstance.h"
+#include "Character/KittyCharacterNonplayer.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Character/KittyCharacterPlayer.h"
@@ -41,5 +42,19 @@ void UKittyAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 			bIsJumping = Player->bIsJumping;
 			bIsAiming = Player->IsAiming();
 		}
+	}
+}
+
+void UKittyAnimInstance::AnimNotify_BatonHit()
+{
+	AKittyCharacterNonplayer* Nonplayer = Cast<AKittyCharacterNonplayer>(TryGetPawnOwner());
+	if (!IsValid(Nonplayer))
+	{
+		return;
+	}
+
+	if (UKTGuardAttackComponent* AttackComponent = Nonplayer->GetAttackComponent())
+	{
+		AttackComponent->HandleHitNotify();
 	}
 }
