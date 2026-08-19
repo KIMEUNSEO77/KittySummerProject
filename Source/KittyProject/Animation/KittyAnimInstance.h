@@ -20,6 +20,12 @@ public:
 	// Functions for updating variables used by the Anim Graph
 	virtual void NativeInitializeAnimation() override;
 	virtual void NativeUpdateAnimation(float DeltaSeconds) override;
+
+protected:
+	UFUNCTION()
+	void AnimNotify_BatonHit();
+
+public:
 	
 	// Variables Used by the Anim Graph
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Character)
