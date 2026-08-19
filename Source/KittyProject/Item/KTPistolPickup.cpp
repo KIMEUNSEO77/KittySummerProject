@@ -53,10 +53,10 @@ void AKTPistolPickup::Interact_Implementation(AActor* Interactor)
 		);
 	}
 
-	if (GEngine)
-	{
-		GEngine->AddOnScreenDebugMessage(4, 2.0f, FColor::Green, TEXT("권총 획득 성공"));
-	}
+	//if (GEngine)
+	//{
+		//GEngine->AddOnScreenDebugMessage(4, 2.0f, FColor::Green, TEXT("권총 획득 성공"));
+	//}
 }
 
 FVector AKTPistolPickup::GetMuzzleLocation() const
