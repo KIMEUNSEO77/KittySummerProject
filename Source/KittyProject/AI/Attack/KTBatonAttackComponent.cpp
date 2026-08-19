@@ -220,6 +220,12 @@ void UKTBatonAttackComponent::UpdateHitWindow()
 	PreviousHitCenter = CurrentHitCenter;
 }
 
+void UKTBatonAttackComponent::EndHitWindow()
+{
+	bHitWindowActive = false;
+	PreviousHitCenter = FVector::ZeroVector;
+}
+
 FVector UKTBatonAttackComponent::GetHitCenter() const
 {
 	const ACharacter* Guard =
