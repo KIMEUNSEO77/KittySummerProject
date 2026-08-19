@@ -137,7 +137,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Attack", meta = (AllowPrivateAccess = "true"))
 	EGuardWeaponType GuardWeaponType = EGuardWeaponType::Baton;
 	
-	UPROPERTY(VisibleAnywhereAnywhere, BlueprintReadOnly, Category = "AI|Attack", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI|Attack", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UKTBatonAttackComponent> BatonAttackComponent;
 
 	UKTGuardAttackComponent* GetAttackComponent() const;

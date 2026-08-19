@@ -128,7 +128,7 @@ UKTGuardAttackComponent* AKittyCharacterNonplayer::GetAttackComponent() const
 float AKittyCharacterNonplayer::GetAIAttackRange()
 {
 	const UKTGuardAttackComponent* AttackComponent = GetAttackComponent();
-	return AttackComponent ? AttackComponent->GetAttackRange : 0.0f;
+	return AttackComponent ? AttackComponent->GetAttackRange() : 0.0f;
 }
 
 float AKittyCharacterNonplayer::GetAITurnSpeed()

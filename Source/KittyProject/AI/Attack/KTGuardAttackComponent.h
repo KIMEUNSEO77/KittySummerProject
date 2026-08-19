@@ -19,5 +19,8 @@ public:
 	virtual float GetAttackRange() const;
 	virtual bool StartAttack(AActor* Target);
 	virtual bool IsAttacking() const;
+	
+	//블루프린트에서 호출할 수 있도록 설정
+	UFUNCTION(BlueprintCallable, Category="Combat||Attack")
 	virtual void HandleHitNotify();
 };
