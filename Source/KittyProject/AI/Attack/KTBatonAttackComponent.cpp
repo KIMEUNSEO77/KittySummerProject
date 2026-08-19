@@ -201,7 +201,7 @@ void UKTBatonAttackComponent::UpdateHitWindow()
 		12,
 		FColor::Orange,
 		false,
-		0.1f
+		1.0f
 	);
 
 	DrawDebugSphere(
@@ -213,7 +213,7 @@ void UKTBatonAttackComponent::UpdateHitWindow()
 			? FColor::Green
 			: FColor::Red,
 		false,
-		0.1f
+		1.0f
 	);
 
 	// 맞은 뒤에도 계속 갱신해야 한다.
