@@ -21,6 +21,9 @@ AKTPistolPickup::AKTPistolPickup()
 	
 	MuzzlePoint = CreateDefaultSubobject<USceneComponent>(TEXT("MuzzlePoint"));
 	MuzzlePoint->SetupAttachment(PickupMesh);
+	
+	PickupStandPoint = CreateDefaultSubobject<USceneComponent>(TEXT("PickupStandPoint"));
+	PickupStandPoint->SetupAttachment(InteractionCollision);
 }
 
 void AKTPistolPickup::Interact_Implementation(AActor* Interactor)
@@ -31,7 +34,10 @@ void AKTPistolPickup::Interact_Implementation(AActor* Interactor)
 	{
 		return;
 	}
+	
+	Player->StartPistolPickup(this);
 
+	/* 다른 함수로 옮김
 	const bool bAcquired = Player->AcquirePistol(this);
 
 	if (!bAcquired)
@@ -39,8 +45,7 @@ void AKTPistolPickup::Interact_Implementation(AActor* Interactor)
 		return;
 	}
 	
-	if (UKTMissionSubsystem* MissionSubsystem =
-	UKTMissionSubsystem::Get(this))
+	if (UKTMissionSubsystem* MissionSubsystem = UKTMissionSubsystem::Get(this))
 	{
 		const FGameplayTag PistolAcquiredTag =
 			FGameplayTag::RequestGameplayTag(
@@ -52,11 +57,7 @@ void AKTPistolPickup::Interact_Implementation(AActor* Interactor)
 			Interactor
 		);
 	}
-
-	//if (GEngine)
-	//{
-		//GEngine->AddOnScreenDebugMessage(4, 2.0f, FColor::Green, TEXT("권총 획득 성공"));
-	//}
+	*/
 }
 
 FVector AKTPistolPickup::GetMuzzleLocation() const
@@ -97,4 +98,37 @@ void AKTPistolPickup::PlayFireSound()
 	}
 
 	UGameplayStatics::PlaySoundAtLocation(this, FireSound, GetMuzzleLocation(), FireSoundVolume, FireSoundPitch);
+}
+
+FTransform AKTPistolPickup::GetPickupStandTransform() const
+{
+	if (!IsValid(PickupStandPoint))
+	{
+		return GetActorTransform();
+	}
+
+	return PickupStandPoint->GetComponentTransform();
+}
+
+bool AKTPistolPickup::CompletePickup(class AKittyCharacterPlayer* Player)
+{
+	// 휙득과 미션 처리
+	if (!IsValid(Player))
+	{
+		return false;
+	}
+
+	if (!Player->AcquirePistol(this))
+	{
+		return false;
+	}
+
+	if (UKTMissionSubsystem* MissionSubsystem = UKTMissionSubsystem::Get(this))
+	{
+		const FGameplayTag PistolAcquiredTag = FGameplayTag::RequestGameplayTag(FName("Mission.Event.Item.Pistol.Acquired"));
+
+		MissionSubsystem->BroadcastMissionEvent(PistolAcquiredTag, Player);
+	}
+
+	return true;
 }

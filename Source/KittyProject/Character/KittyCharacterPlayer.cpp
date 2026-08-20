@@ -28,6 +28,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "Camera/CameraShakeBase.h"
 #include "Item/KTItemPickupBase.h"
+#include "Animation/AnimMontage.h"
+#include "MotionWarpingComponent.h"
 
 AKittyCharacterPlayer::AKittyCharacterPlayer()
 {
@@ -140,6 +142,8 @@ AKittyCharacterPlayer::AKittyCharacterPlayer()
 	{
 		CrouchedToStandingAnimation = CrouchedToStandingAnimationRef.Object;
 	}
+	
+	MotionWarpingComponent = CreateDefaultSubobject<UMotionWarpingComponent>(TEXT("MotionWarpingComponent"));
 }
 
 void AKittyCharacterPlayer::BeginPlay()
@@ -323,7 +327,6 @@ void AKittyCharacterPlayer::CrouchEnd()
 
 void AKittyCharacterPlayer::CheckForInteractable()
 {
-	
 	TArray<FOverlapResult> OverlapResults;
 
 	FCollisionObjectQueryParams ObjectQueryParams;
@@ -379,6 +382,16 @@ void AKittyCharacterPlayer::CheckForInteractable()
 			}
 
 			const float DistanceSquared = ToCandidate.SizeSquared();
+			
+			if (const AKTItemPickupBase* PickupItem = Cast<AKTItemPickupBase>(Candidate))
+			{
+				const float AllowedDistance = PickupItem->GetPickupInteractionDistance();
+
+				if (DistanceSquared > FMath::Square(AllowedDistance))
+				{
+					continue;
+				}
+			}
 
 			// 앞쪽에 있는 아이템 중 가장 가까운 것을 선택
 			if (DistanceSquared < BestDistanceSquared)
@@ -738,4 +751,192 @@ void AKittyCharacterPlayer::UpdateInventoryCamera(float DeltaTime)
 	{
 		bIsInventoryCameraTransitioning = false;
 	}
+}
+
+void AKittyCharacterPlayer::StartPistolPickup(AKTPistolPickup* PistolPickup)
+{
+	if (bIsPerformingInteraction || !IsValid(PistolPickup) || !IsValid(PistolPickupMontage) || !IsValid(MotionWarpingComponent))
+	{
+		return;
+	}
+
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+	if (!IsValid(AnimInstance))
+	{
+		return;
+	}
+
+	PendingPistolPickup = PistolPickup;
+
+	// 조준 상태 해제
+	StopAiming();
+	
+	const FTransform PickupTargetTransform = PistolPickup->GetPickupStandTransform();
+
+	MotionWarpingComponent->AddOrUpdateWarpTargetFromTransform(TEXT("PistolPickupTarget"), PickupTargetTransform);
+
+	// 이동과 카메라 조작 잠금
+	BeginInteractionLock();
+	
+	AnimInstance->OnPlayMontageNotifyBegin.AddUniqueDynamic(this, &AKittyCharacterPlayer::HandleInteractionNotify);
+	AnimInstance->OnMontageEnded.AddUniqueDynamic(this, &AKittyCharacterPlayer::HandleInteractionMontageEnded);
+
+	const float PlayedDuration = AnimInstance->Montage_Play(PistolPickupMontage);
+
+	// 몽타주 재생에 실패했다면 잠금 해제
+	if (PlayedDuration <= 0.0f)
+	{
+		PendingPistolPickup = nullptr;
+		MotionWarpingComponent->RemoveWarpTarget(TEXT("PistolPickupTarget"));
+		EndInteractionLock();
+	}
+}
+
+void AKittyCharacterPlayer::StartItemPickup(class AKTItemPickupBase* ItemPickup, class UAnimMontage* ItemMontage)
+{
+	if (bIsPerformingInteraction || !IsValid(ItemPickup) || !IsValid(ItemMontage))
+	{
+		return;
+	}
+
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+	if (!IsValid(AnimInstance))
+	{
+		return;
+	}
+
+	PendingItemPickup = ItemPickup;
+	ActiveItemPickupMontage = ItemMontage;
+
+	StopAiming();
+
+	// 제자리 애니메이션이므로 아이템을 바라보게만 함
+	FVector DirectionToItem = ItemPickup->GetActorLocation() - GetActorLocation();
+
+	DirectionToItem.Z = 0.0f;
+
+	if (!DirectionToItem.IsNearlyZero())
+	{
+		const FRotator TargetRotation = DirectionToItem.Rotation();
+
+		SetActorRotation(FRotator(0.0f, TargetRotation.Yaw, 0.0f));
+	}
+
+	BeginInteractionLock();
+
+	AnimInstance->OnPlayMontageNotifyBegin.AddUniqueDynamic(this, &AKittyCharacterPlayer::HandleInteractionNotify);
+	AnimInstance->OnMontageEnded.AddUniqueDynamic(this, &AKittyCharacterPlayer::HandleInteractionMontageEnded);
+
+	const float PlayedDuration = AnimInstance->Montage_Play(ItemMontage);
+
+	if (PlayedDuration <= 0.0f)
+	{
+		PendingItemPickup = nullptr;
+		ActiveItemPickupMontage = nullptr;
+		EndInteractionLock();
+	}
+}
+
+void AKittyCharacterPlayer::BeginInteractionLock()
+{
+	bIsPerformingInteraction = true;
+
+	GetCharacterMovement()->StopMovementImmediately();
+
+	if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
+	{
+		PlayerController->SetIgnoreMoveInput(true);
+		PlayerController->SetIgnoreLookInput(true);
+	}
+}
+
+void AKittyCharacterPlayer::EndInteractionLock()
+{
+	bIsPerformingInteraction = false;
+
+	if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
+	{
+		PlayerController->SetIgnoreMoveInput(false);
+		PlayerController->SetIgnoreLookInput(false);
+	}
+}
+
+void AKittyCharacterPlayer::HandleInteractionNotify(FName NotifyName, const FBranchingPointNotifyPayload& BranchingPointPayload)
+{
+	if (!bIsPerformingInteraction)
+	{
+		return;
+	}
+
+	// 권총 획득 Notify
+	if (NotifyName == TEXT("PickupPistol"))
+	{
+		if (IsValid(PendingPistolPickup))
+		{
+			if (PendingPistolPickup->CompletePickup(this))
+			{
+				PendingPistolPickup = nullptr;
+			}
+		}
+
+		return;
+	}
+
+	// 일반 아이템 휙득 Notify
+	if (NotifyName == TEXT("PickupItem"))
+	{
+		if (IsValid(PendingItemPickup))
+		{
+			// 다시 상호작용되지 않도록 충돌 비활성화
+			PendingItemPickup->SetPickupInteractionEnabled(false);
+
+			// 카드키를 왼손 소켓에 임시 부착
+			PendingItemPickup->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("ItemPickupSocket"));
+		}
+
+		return;
+	}
+	
+	// 아이템 저장
+	if (NotifyName == TEXT("StoreItem"))
+	{
+		if (IsValid(PendingItemPickup))
+		{
+			if (PendingItemPickup->CompletePickup(this))
+			{
+				PendingItemPickup = nullptr;
+
+				if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
+				{
+					AnimInstance->Montage_Stop(0.5f, ActiveItemPickupMontage);
+				}
+			}
+		}
+
+		return;
+	}
+}
+
+void AKittyCharacterPlayer::HandleInteractionMontageEnded(UAnimMontage* Montage, bool bInterrupted)
+{
+	const bool bPistolMontageEnded = Montage == PistolPickupMontage;
+	const bool bItemMontageEnded = Montage == ActiveItemPickupMontage;
+
+	if (!bPistolMontageEnded && !bItemMontageEnded)
+	{
+		return;
+	}
+
+	if (bPistolMontageEnded && IsValid(MotionWarpingComponent))
+	{
+		MotionWarpingComponent->RemoveWarpTarget(TEXT("PistolPickupTarget"));
+	}
+
+	PendingPistolPickup = nullptr;
+	PendingItemPickup = nullptr;
+	ActiveItemPickupMontage = nullptr;
+
+	EndInteractionLock();
 }

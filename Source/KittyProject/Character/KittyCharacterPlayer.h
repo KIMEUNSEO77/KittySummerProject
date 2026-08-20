@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Character/KittyCharacterBase.h"
 #include "InputActionValue.h"
+#include "Animation/AnimInstance.h"
 #include "KittyCharacterPlayer.generated.h"
 
 /**
@@ -215,4 +216,50 @@ private:
 	float CameraTransitionStartFOV = 90.0f;
 
 	void UpdateInventoryCamera(float DeltaTime);
+	
+	// Interaction Animation Section
+public:
+	// 총 획득 애니메이션 시작
+	void StartPistolPickup(class AKTPistolPickup* PistolPickup);
+	
+	// 일반 아이템 획득 애니메이션 시작
+	void StartItemPickup(class AKTItemPickupBase* ItemPickup, class UAnimMontage* ItemMontage);
+	
+protected:
+	// 상호작용 애니메이션 실행 여부
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Interaction")
+	bool bIsPerformingInteraction = false;
+
+	// 총 획득 몽타주
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Interaction|Animation")
+	TObjectPtr<class UAnimMontage> PistolPickupMontage;
+
+	// 애니메이션이 끝날 때까지 기억할 총
+	UPROPERTY()
+	TObjectPtr<class AKTPistolPickup> PendingPistolPickup;
+
+	// 상호작용 중 조작 잠금
+	void BeginInteractionLock();
+
+	// 상호작용 종료 후 조작 해제
+	void EndInteractionLock();
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Interaction|MotionWarping")
+	TObjectPtr<class UMotionWarpingComponent> MotionWarpingComponent;
+	
+	// 몽타주에서 Montage Notify가 발생했을 때 호출
+	UFUNCTION()
+	void HandleInteractionNotify(FName NotifyName, const FBranchingPointNotifyPayload& BranchingPointPayload);
+
+	// 몽타주가 정상 종료되거나 중단됐을 때 호출
+	UFUNCTION()
+	void HandleInteractionMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+	
+	// 현재 획득 애니메이션을 실행 중인 일반 아이템
+	UPROPERTY()
+	TObjectPtr<class AKTItemPickupBase> PendingItemPickup;
+
+	// 현재 실행 중인 일반 아이템 몽타주
+	UPROPERTY()
+	TObjectPtr<class UAnimMontage> ActiveItemPickupMontage;
 };

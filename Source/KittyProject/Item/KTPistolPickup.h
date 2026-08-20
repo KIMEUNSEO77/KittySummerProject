@@ -32,6 +32,12 @@ public:
 	// 권총 sound 재생
 	void PlayFireSound();
 	
+	// 총을 주울 때 플레이어가 위치할 Transform
+	FTransform GetPickupStandTransform() const;
+	
+	// 획득 애니메이션의 Notify 시점에 실제 총 획득 처리
+	bool CompletePickup(class AKittyCharacterPlayer* Player);
+	
 protected:
 	// 총구 위치와 방향을 나타내는 컴포넌트
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Pistol|Components")
@@ -52,4 +58,8 @@ protected:
 	// 발사음 높낮이
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Pistol|Sound", meta = (ClampMin = "0.1"))
 	float FireSoundPitch = 1.0f;
+	
+	// 총을 주울 때 플레이어가 서 있을 위치와 방향
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Pistol|Interaction")
+	TObjectPtr<class USceneComponent> PickupStandPoint;
 };

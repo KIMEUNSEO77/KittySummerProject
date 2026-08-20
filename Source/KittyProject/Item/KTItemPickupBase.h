@@ -46,4 +46,22 @@ public:
 	// 이 월드 액터가 획득 시 인벤토리에 넣을 아이템 정보
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Pickup|Item")
 	TObjectPtr<UKTItemDataAsset> ItemData;
+	
+	// Interaction Animation Section
+public:
+	// Notify 시점에 아이템 획득 처리
+	bool CompletePickup(class AKittyCharacterPlayer* Player);
+	
+	// 아이템마다 사용할 획득 몽타주
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Pickup|Animation")
+	TObjectPtr<class UAnimMontage> PickupMontage;
+	
+	// 이 아이템과 상호작용할 수 있는 거리 (애니메이션 때문에 따로 설정)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Pickup|Interaction")
+	float PickupInteractionDistance = 150.0f;
+
+	float GetPickupInteractionDistance() const
+	{
+		return PickupInteractionDistance;
+	}
 };
