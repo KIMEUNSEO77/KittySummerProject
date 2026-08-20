@@ -55,4 +55,13 @@ public:
 	// 아이템마다 사용할 획득 몽타주
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Pickup|Animation")
 	TObjectPtr<class UAnimMontage> PickupMontage;
+	
+	// 이 아이템과 상호작용할 수 있는 거리 (애니메이션 때문에 따로 설정)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Pickup|Interaction")
+	float PickupInteractionDistance = 150.0f;
+
+	float GetPickupInteractionDistance() const
+	{
+		return PickupInteractionDistance;
+	}
 };

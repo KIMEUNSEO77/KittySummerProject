@@ -327,7 +327,6 @@ void AKittyCharacterPlayer::CrouchEnd()
 
 void AKittyCharacterPlayer::CheckForInteractable()
 {
-	
 	TArray<FOverlapResult> OverlapResults;
 
 	FCollisionObjectQueryParams ObjectQueryParams;
@@ -383,6 +382,16 @@ void AKittyCharacterPlayer::CheckForInteractable()
 			}
 
 			const float DistanceSquared = ToCandidate.SizeSquared();
+			
+			if (const AKTItemPickupBase* PickupItem = Cast<AKTItemPickupBase>(Candidate))
+			{
+				const float AllowedDistance = PickupItem->GetPickupInteractionDistance();
+
+				if (DistanceSquared > FMath::Square(AllowedDistance))
+				{
+					continue;
+				}
+			}
 
 			// 앞쪽에 있는 아이템 중 가장 가까운 것을 선택
 			if (DistanceSquared < BestDistanceSquared)
@@ -880,21 +889,32 @@ void AKittyCharacterPlayer::HandleInteractionNotify(FName NotifyName, const FBra
 	{
 		if (IsValid(PendingItemPickup))
 		{
+			// 다시 상호작용되지 않도록 충돌 비활성화
+			PendingItemPickup->SetPickupInteractionEnabled(false);
+
+			// 카드키를 왼손 소켓에 임시 부착
+			PendingItemPickup->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("ItemPickupSocket"));
+		}
+
+		return;
+	}
+	
+	// 아이템 저장
+	if (NotifyName == TEXT("StoreItem"))
+	{
+		if (IsValid(PendingItemPickup))
+		{
 			if (PendingItemPickup->CompletePickup(this))
 			{
 				PendingItemPickup = nullptr;
 
-				// 아이템 획득 직후 몽타주를 부드럽게 조기 종료
-				if (UAnimInstance* AnimInstance =
-					GetMesh()->GetAnimInstance())
+				if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
 				{
-					AnimInstance->Montage_Stop(
-						0.6f,
-						ActiveItemPickupMontage
-					);
+					AnimInstance->Montage_Stop(0.5f, ActiveItemPickupMontage);
 				}
 			}
 		}
+
 		return;
 	}
 }
