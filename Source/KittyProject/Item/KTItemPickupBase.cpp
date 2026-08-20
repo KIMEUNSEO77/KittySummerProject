@@ -52,45 +52,56 @@ void AKTItemPickupBase::BeginPlay()
 	Super::BeginPlay();
 }
 
+bool AKTItemPickupBase::CompletePickup(class AKittyCharacterPlayer* Player)
+{
+	if (!IsValid(Player) || !IsValid(ItemData))
+	{
+		return false;
+	}
+
+	UKTInventoryComponent* Inventory = Player->GetInventoryComponent();
+
+	if (!IsValid(Inventory))
+	{
+		return false;
+	}
+
+	if (!Inventory->AddItem(ItemData))
+	{
+		return false;
+	}
+
+	if (ItemData->AcquiredEventTag.IsValid())
+	{
+		if (UKTMissionSubsystem* MissionSubsystem = UKTMissionSubsystem::Get(this))
+		{
+			MissionSubsystem->BroadcastMissionEvent(ItemData->AcquiredEventTag, Player);
+		}
+	}
+
+	Destroy();
+	
+	return true;
+}
+
 void AKTItemPickupBase::Interact_Implementation(AActor* Interactor)
 {
-	AKittyCharacterPlayer* Player =
-		Cast<AKittyCharacterPlayer>(Interactor);
+	AKittyCharacterPlayer* Player = Cast<AKittyCharacterPlayer>(Interactor);
 
 	if (!IsValid(Player) || !IsValid(ItemData))
 	{
 		return;
 	}
-
-	UKTInventoryComponent* Inventory =
-		Player->GetInventoryComponent();
-
-	if (!IsValid(Inventory))
+	
+	// 몽타주가 설정된 아이템은 애니메이션부터 시작
+	if (IsValid(PickupMontage))
 	{
+		Player->StartItemPickup(this, PickupMontage);
 		return;
 	}
 
-	// 인벤토리에 정상적으로 들어간 경우에만
-	// 맵의 아이템을 삭제합니다.
-	if (!Inventory->AddItem(ItemData))
-	{
-		return;
-	}
-
-	// 이 아이템이 미션과 관련 있다면 완료 태그를 전송합니다.
-	if (ItemData->AcquiredEventTag.IsValid())
-	{
-		if (UKTMissionSubsystem* MissionSubsystem =
-			UKTMissionSubsystem::Get(this))
-		{
-			MissionSubsystem->BroadcastMissionEvent(
-				ItemData->AcquiredEventTag,
-				Interactor
-			);
-		}
-	}
-
-	Destroy();
+	// 몽타주가 없는 기존 아이템은 즉시 획득
+	CompletePickup(Player);
 }
 
 FText AKTItemPickupBase::GetInteractionText_Implementation() const

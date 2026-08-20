@@ -46,4 +46,13 @@ public:
 	// 이 월드 액터가 획득 시 인벤토리에 넣을 아이템 정보
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Pickup|Item")
 	TObjectPtr<UKTItemDataAsset> ItemData;
+	
+	// Interaction Animation Section
+public:
+	// Notify 시점에 아이템 획득 처리
+	bool CompletePickup(class AKittyCharacterPlayer* Player);
+	
+	// 아이템마다 사용할 획득 몽타주
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Pickup|Animation")
+	TObjectPtr<class UAnimMontage> PickupMontage;
 };

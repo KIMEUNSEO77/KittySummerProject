@@ -222,6 +222,9 @@ public:
 	// 총 획득 애니메이션 시작
 	void StartPistolPickup(class AKTPistolPickup* PistolPickup);
 	
+	// 일반 아이템 획득 애니메이션 시작
+	void StartItemPickup(class AKTItemPickupBase* ItemPickup, class UAnimMontage* ItemMontage);
+	
 protected:
 	// 상호작용 애니메이션 실행 여부
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Interaction")
@@ -251,4 +254,12 @@ protected:
 	// 몽타주가 정상 종료되거나 중단됐을 때 호출
 	UFUNCTION()
 	void HandleInteractionMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+	
+	// 현재 획득 애니메이션을 실행 중인 일반 아이템
+	UPROPERTY()
+	TObjectPtr<class AKTItemPickupBase> PendingItemPickup;
+
+	// 현재 실행 중인 일반 아이템 몽타주
+	UPROPERTY()
+	TObjectPtr<class UAnimMontage> ActiveItemPickupMontage;
 };

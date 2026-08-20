@@ -784,6 +784,52 @@ void AKittyCharacterPlayer::StartPistolPickup(AKTPistolPickup* PistolPickup)
 	}
 }
 
+void AKittyCharacterPlayer::StartItemPickup(class AKTItemPickupBase* ItemPickup, class UAnimMontage* ItemMontage)
+{
+	if (bIsPerformingInteraction || !IsValid(ItemPickup) || !IsValid(ItemMontage))
+	{
+		return;
+	}
+
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+	if (!IsValid(AnimInstance))
+	{
+		return;
+	}
+
+	PendingItemPickup = ItemPickup;
+	ActiveItemPickupMontage = ItemMontage;
+
+	StopAiming();
+
+	// 제자리 애니메이션이므로 아이템을 바라보게만 함
+	FVector DirectionToItem = ItemPickup->GetActorLocation() - GetActorLocation();
+
+	DirectionToItem.Z = 0.0f;
+
+	if (!DirectionToItem.IsNearlyZero())
+	{
+		const FRotator TargetRotation = DirectionToItem.Rotation();
+
+		SetActorRotation(FRotator(0.0f, TargetRotation.Yaw, 0.0f));
+	}
+
+	BeginInteractionLock();
+
+	AnimInstance->OnPlayMontageNotifyBegin.AddUniqueDynamic(this, &AKittyCharacterPlayer::HandleInteractionNotify);
+	AnimInstance->OnMontageEnded.AddUniqueDynamic(this, &AKittyCharacterPlayer::HandleInteractionMontageEnded);
+
+	const float PlayedDuration = AnimInstance->Montage_Play(ItemMontage);
+
+	if (PlayedDuration <= 0.0f)
+	{
+		PendingItemPickup = nullptr;
+		ActiveItemPickupMontage = nullptr;
+		EndInteractionLock();
+	}
+}
+
 void AKittyCharacterPlayer::BeginInteractionLock()
 {
 	bIsPerformingInteraction = true;
@@ -815,36 +861,62 @@ void AKittyCharacterPlayer::HandleInteractionNotify(FName NotifyName, const FBra
 		return;
 	}
 
-	if (NotifyName != TEXT("PickupPistol"))
+	// 권총 획득 Notify
+	if (NotifyName == TEXT("PickupPistol"))
 	{
+		if (IsValid(PendingPistolPickup))
+		{
+			if (PendingPistolPickup->CompletePickup(this))
+			{
+				PendingPistolPickup = nullptr;
+			}
+		}
+
 		return;
 	}
 
-	if (!IsValid(PendingPistolPickup))
+	// 일반 아이템 휙득 Notify
+	if (NotifyName == TEXT("PickupItem"))
 	{
-		return;
-	}
+		if (IsValid(PendingItemPickup))
+		{
+			if (PendingItemPickup->CompletePickup(this))
+			{
+				PendingItemPickup = nullptr;
 
-	if (PendingPistolPickup->CompletePickup(this))
-	{
-		PendingPistolPickup = nullptr;
+				// 아이템 획득 직후 몽타주를 부드럽게 조기 종료
+				if (UAnimInstance* AnimInstance =
+					GetMesh()->GetAnimInstance())
+				{
+					AnimInstance->Montage_Stop(
+						0.6f,
+						ActiveItemPickupMontage
+					);
+				}
+			}
+		}
+		return;
 	}
 }
 
 void AKittyCharacterPlayer::HandleInteractionMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
-	// 다른 몽타주 종료에는 반응하지 않음
-	if (Montage != PistolPickupMontage)
+	const bool bPistolMontageEnded = Montage == PistolPickupMontage;
+	const bool bItemMontageEnded = Montage == ActiveItemPickupMontage;
+
+	if (!bPistolMontageEnded && !bItemMontageEnded)
 	{
 		return;
 	}
 
-	PendingPistolPickup = nullptr;
-
-	if (IsValid(MotionWarpingComponent))
+	if (bPistolMontageEnded && IsValid(MotionWarpingComponent))
 	{
 		MotionWarpingComponent->RemoveWarpTarget(TEXT("PistolPickupTarget"));
 	}
+
+	PendingPistolPickup = nullptr;
+	PendingItemPickup = nullptr;
+	ActiveItemPickupMontage = nullptr;
 
 	EndInteractionLock();
 }
