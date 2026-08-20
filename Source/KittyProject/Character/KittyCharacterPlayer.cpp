@@ -746,7 +746,7 @@ void AKittyCharacterPlayer::UpdateInventoryCamera(float DeltaTime)
 
 void AKittyCharacterPlayer::StartPistolPickup(AKTPistolPickup* PistolPickup)
 {
-	if (bIsPerformingInteraction || !IsValid(PistolPickup) || !IsValid(PistolPickupMontage))
+	if (bIsPerformingInteraction || !IsValid(PistolPickup) || !IsValid(PistolPickupMontage) || !IsValid(MotionWarpingComponent))
 	{
 		return;
 	}
@@ -762,6 +762,10 @@ void AKittyCharacterPlayer::StartPistolPickup(AKTPistolPickup* PistolPickup)
 
 	// 조준 상태 해제
 	StopAiming();
+	
+	const FTransform PickupTargetTransform = PistolPickup->GetPickupStandTransform();
+
+	MotionWarpingComponent->AddOrUpdateWarpTargetFromTransform(TEXT("PistolPickupTarget"), PickupTargetTransform);
 
 	// 이동과 카메라 조작 잠금
 	BeginInteractionLock();

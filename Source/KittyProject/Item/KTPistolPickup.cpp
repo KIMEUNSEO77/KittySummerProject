@@ -21,6 +21,9 @@ AKTPistolPickup::AKTPistolPickup()
 	
 	MuzzlePoint = CreateDefaultSubobject<USceneComponent>(TEXT("MuzzlePoint"));
 	MuzzlePoint->SetupAttachment(PickupMesh);
+	
+	PickupStandPoint = CreateDefaultSubobject<USceneComponent>(TEXT("PickupStandPoint"));
+	PickupStandPoint->SetupAttachment(InteractionCollision);
 }
 
 void AKTPistolPickup::Interact_Implementation(AActor* Interactor)
@@ -95,4 +98,14 @@ void AKTPistolPickup::PlayFireSound()
 	}
 
 	UGameplayStatics::PlaySoundAtLocation(this, FireSound, GetMuzzleLocation(), FireSoundVolume, FireSoundPitch);
+}
+
+FTransform AKTPistolPickup::GetPickupStandTransform() const
+{
+	if (!IsValid(PickupStandPoint))
+	{
+		return GetActorTransform();
+	}
+
+	return PickupStandPoint->GetComponentTransform();
 }
