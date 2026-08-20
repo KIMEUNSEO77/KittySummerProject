@@ -31,7 +31,10 @@ void AKTPistolPickup::Interact_Implementation(AActor* Interactor)
 	{
 		return;
 	}
+	
+	Player->StartPistolPickup(this);
 
+	/* 임시 주석 처리
 	const bool bAcquired = Player->AcquirePistol(this);
 
 	if (!bAcquired)
@@ -39,8 +42,7 @@ void AKTPistolPickup::Interact_Implementation(AActor* Interactor)
 		return;
 	}
 	
-	if (UKTMissionSubsystem* MissionSubsystem =
-	UKTMissionSubsystem::Get(this))
+	if (UKTMissionSubsystem* MissionSubsystem = UKTMissionSubsystem::Get(this))
 	{
 		const FGameplayTag PistolAcquiredTag =
 			FGameplayTag::RequestGameplayTag(
@@ -52,11 +54,7 @@ void AKTPistolPickup::Interact_Implementation(AActor* Interactor)
 			Interactor
 		);
 	}
-
-	//if (GEngine)
-	//{
-		//GEngine->AddOnScreenDebugMessage(4, 2.0f, FColor::Green, TEXT("권총 획득 성공"));
-	//}
+	*/
 }
 
 FVector AKTPistolPickup::GetMuzzleLocation() const

@@ -215,4 +215,31 @@ private:
 	float CameraTransitionStartFOV = 90.0f;
 
 	void UpdateInventoryCamera(float DeltaTime);
+	
+	// Interaction Animation Section
+public:
+	// 총 획득 애니메이션 시작
+	void StartPistolPickup(class AKTPistolPickup* PistolPickup);
+	
+protected:
+	// 상호작용 애니메이션 실행 여부
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Interaction")
+	bool bIsPerformingInteraction = false;
+
+	// 총 획득 몽타주
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Interaction|Animation")
+	TObjectPtr<class UAnimMontage> PistolPickupMontage;
+
+	// 애니메이션이 끝날 때까지 기억할 총
+	UPROPERTY()
+	TObjectPtr<class AKTPistolPickup> PendingPistolPickup;
+
+	// 상호작용 중 조작 잠금
+	void BeginInteractionLock();
+
+	// 상호작용 종료 후 조작 해제
+	void EndInteractionLock();
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Interaction|MotionWarping")
+	TObjectPtr<class UMotionWarpingComponent> MotionWarpingComponent;
 };

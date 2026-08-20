@@ -28,6 +28,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "Camera/CameraShakeBase.h"
 #include "Item/KTItemPickupBase.h"
+#include "Animation/AnimMontage.h"
+#include "MotionWarpingComponent.h"
 
 AKittyCharacterPlayer::AKittyCharacterPlayer()
 {
@@ -140,6 +142,8 @@ AKittyCharacterPlayer::AKittyCharacterPlayer()
 	{
 		CrouchedToStandingAnimation = CrouchedToStandingAnimationRef.Object;
 	}
+	
+	MotionWarpingComponent = CreateDefaultSubobject<UMotionWarpingComponent>(TEXT("MotionWarpingComponent"));
 }
 
 void AKittyCharacterPlayer::BeginPlay()
@@ -737,5 +741,61 @@ void AKittyCharacterPlayer::UpdateInventoryCamera(float DeltaTime)
 	if (Alpha >= 1.0f)
 	{
 		bIsInventoryCameraTransitioning = false;
+	}
+}
+
+void AKittyCharacterPlayer::StartPistolPickup(AKTPistolPickup* PistolPickup)
+{
+	if (bIsPerformingInteraction || !IsValid(PistolPickup) || !IsValid(PistolPickupMontage))
+	{
+		return;
+	}
+
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+	if (!IsValid(AnimInstance))
+	{
+		return;
+	}
+
+	PendingPistolPickup = PistolPickup;
+
+	// 조준 상태 해제
+	StopAiming();
+
+	// 이동과 카메라 조작 잠금
+	BeginInteractionLock();
+
+	const float PlayedDuration = AnimInstance->Montage_Play(PistolPickupMontage);
+
+	// 몽타주 재생에 실패했다면 잠금 해제
+	if (PlayedDuration <= 0.0f)
+	{
+		PendingPistolPickup = nullptr;
+		EndInteractionLock();
+	}
+}
+
+void AKittyCharacterPlayer::BeginInteractionLock()
+{
+	bIsPerformingInteraction = true;
+
+	GetCharacterMovement()->StopMovementImmediately();
+
+	if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
+	{
+		PlayerController->SetIgnoreMoveInput(true);
+		PlayerController->SetIgnoreLookInput(true);
+	}
+}
+
+void AKittyCharacterPlayer::EndInteractionLock()
+{
+	bIsPerformingInteraction = false;
+
+	if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
+	{
+		PlayerController->SetIgnoreMoveInput(false);
+		PlayerController->SetIgnoreLookInput(false);
 	}
 }
