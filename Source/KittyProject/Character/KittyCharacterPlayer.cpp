@@ -769,6 +769,9 @@ void AKittyCharacterPlayer::StartPistolPickup(AKTPistolPickup* PistolPickup)
 
 	// 이동과 카메라 조작 잠금
 	BeginInteractionLock();
+	
+	AnimInstance->OnPlayMontageNotifyBegin.AddUniqueDynamic(this, &AKittyCharacterPlayer::HandleInteractionNotify);
+	AnimInstance->OnMontageEnded.AddUniqueDynamic(this, &AKittyCharacterPlayer::HandleInteractionMontageEnded);
 
 	const float PlayedDuration = AnimInstance->Montage_Play(PistolPickupMontage);
 
@@ -776,6 +779,7 @@ void AKittyCharacterPlayer::StartPistolPickup(AKTPistolPickup* PistolPickup)
 	if (PlayedDuration <= 0.0f)
 	{
 		PendingPistolPickup = nullptr;
+		MotionWarpingComponent->RemoveWarpTarget(TEXT("PistolPickupTarget"));
 		EndInteractionLock();
 	}
 }
@@ -802,4 +806,45 @@ void AKittyCharacterPlayer::EndInteractionLock()
 		PlayerController->SetIgnoreMoveInput(false);
 		PlayerController->SetIgnoreLookInput(false);
 	}
+}
+
+void AKittyCharacterPlayer::HandleInteractionNotify(FName NotifyName, const FBranchingPointNotifyPayload& BranchingPointPayload)
+{
+	if (!bIsPerformingInteraction)
+	{
+		return;
+	}
+
+	if (NotifyName != TEXT("PickupPistol"))
+	{
+		return;
+	}
+
+	if (!IsValid(PendingPistolPickup))
+	{
+		return;
+	}
+
+	if (PendingPistolPickup->CompletePickup(this))
+	{
+		PendingPistolPickup = nullptr;
+	}
+}
+
+void AKittyCharacterPlayer::HandleInteractionMontageEnded(UAnimMontage* Montage, bool bInterrupted)
+{
+	// 다른 몽타주 종료에는 반응하지 않음
+	if (Montage != PistolPickupMontage)
+	{
+		return;
+	}
+
+	PendingPistolPickup = nullptr;
+
+	if (IsValid(MotionWarpingComponent))
+	{
+		MotionWarpingComponent->RemoveWarpTarget(TEXT("PistolPickupTarget"));
+	}
+
+	EndInteractionLock();
 }

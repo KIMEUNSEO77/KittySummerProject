@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Character/KittyCharacterBase.h"
 #include "InputActionValue.h"
+#include "Animation/AnimInstance.h"
 #include "KittyCharacterPlayer.generated.h"
 
 /**
@@ -242,4 +243,12 @@ protected:
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Interaction|MotionWarping")
 	TObjectPtr<class UMotionWarpingComponent> MotionWarpingComponent;
+	
+	// 몽타주에서 Montage Notify가 발생했을 때 호출
+	UFUNCTION()
+	void HandleInteractionNotify(FName NotifyName, const FBranchingPointNotifyPayload& BranchingPointPayload);
+
+	// 몽타주가 정상 종료되거나 중단됐을 때 호출
+	UFUNCTION()
+	void HandleInteractionMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 };

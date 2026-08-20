@@ -37,7 +37,7 @@ void AKTPistolPickup::Interact_Implementation(AActor* Interactor)
 	
 	Player->StartPistolPickup(this);
 
-	/* 임시 주석 처리
+	/* 다른 함수로 옮김
 	const bool bAcquired = Player->AcquirePistol(this);
 
 	if (!bAcquired)
@@ -108,4 +108,27 @@ FTransform AKTPistolPickup::GetPickupStandTransform() const
 	}
 
 	return PickupStandPoint->GetComponentTransform();
+}
+
+bool AKTPistolPickup::CompletePickup(class AKittyCharacterPlayer* Player)
+{
+	// 휙득과 미션 처리
+	if (!IsValid(Player))
+	{
+		return false;
+	}
+
+	if (!Player->AcquirePistol(this))
+	{
+		return false;
+	}
+
+	if (UKTMissionSubsystem* MissionSubsystem = UKTMissionSubsystem::Get(this))
+	{
+		const FGameplayTag PistolAcquiredTag = FGameplayTag::RequestGameplayTag(FName("Mission.Event.Item.Pistol.Acquired"));
+
+		MissionSubsystem->BroadcastMissionEvent(PistolAcquiredTag, Player);
+	}
+
+	return true;
 }

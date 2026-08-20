@@ -35,6 +35,9 @@ public:
 	// 총을 주울 때 플레이어가 위치할 Transform
 	FTransform GetPickupStandTransform() const;
 	
+	// 획득 애니메이션의 Notify 시점에 실제 총 획득 처리
+	bool CompletePickup(class AKittyCharacterPlayer* Player);
+	
 protected:
 	// 총구 위치와 방향을 나타내는 컴포넌트
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Pistol|Components")
