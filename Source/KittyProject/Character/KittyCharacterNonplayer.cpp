@@ -18,28 +18,28 @@ AKittyCharacterNonplayer::AKittyCharacterNonplayer()
 	AIControllerClass = AKittyAIController::StaticClass();
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 	
-	static ConstructorHelpers::FObjectFinder<UAnimMontage>FrontDeathMontageRef(TEXT("/Game/Animations/DieAnimation/AM_FrontDeath.AM_FrontDeath"));
+	static ConstructorHelpers::FObjectFinder<UAnimMontage>FrontDeathMontageRef(TEXT("/Game/Animations/GuardAnimation/AM_FrontDeath1.AM_FrontDeath1"));
 
 	if (FrontDeathMontageRef.Succeeded())
 	{
 		FrontDeathMontage = FrontDeathMontageRef.Object;
 	}
 
-	static ConstructorHelpers::FObjectFinder<UAnimMontage>BackDeathMontageRef(TEXT("/Game/Animations/DieAnimation/AM_BackDeath.AM_BackDeath"));
+	static ConstructorHelpers::FObjectFinder<UAnimMontage>BackDeathMontageRef(TEXT("/Game/Animations/GuardAnimation/AM_BackDeath1.AM_BackDeath1"));
 
 	if (BackDeathMontageRef.Succeeded())
 	{
 		BackDeathMontage = BackDeathMontageRef.Object;
 	}
 
-	static ConstructorHelpers::FObjectFinder<UAnimMontage>LeftDeathMontageRef(TEXT("/Game/Animations/DieAnimation/AM_LeftDeath.AM_LeftDeath"));
+	static ConstructorHelpers::FObjectFinder<UAnimMontage>LeftDeathMontageRef(TEXT("/Game/Animations/GuardAnimation/AM_LeftDeath1.AM_LeftDeath1"));
 
 	if (LeftDeathMontageRef.Succeeded())
 	{
 		LeftDeathMontage = LeftDeathMontageRef.Object;
 	}
 
-	static ConstructorHelpers::FObjectFinder<UAnimMontage>RightDeathMontageRef(TEXT("/Game/Animations/DieAnimation/AM_RightDeath.AM_RightDeath"));
+	static ConstructorHelpers::FObjectFinder<UAnimMontage>RightDeathMontageRef(TEXT("/Game/Animations/GuardAnimation/AM_RightDeath1.AM_RightDeath1"));
 
 	if (RightDeathMontageRef.Succeeded())
 	{
