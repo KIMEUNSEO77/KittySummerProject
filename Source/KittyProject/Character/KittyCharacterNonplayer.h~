@@ -86,16 +86,16 @@ private:
 	UPROPERTY(VisibleInstanceOnly,BlueprintReadOnly,Category = "Debug|Death", meta = (AllowPrivateAccess = "true"))
 	EKittyDeathDirection DeathDirection = EKittyDeathDirection::None;
 	//각 방향별 죽는 몽타주
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation|Death", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation|Death")
 	TObjectPtr<UAnimMontage> BackDeathMontage;
 	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation|Death", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation|Death")
 	TObjectPtr<UAnimMontage> FrontDeathMontage;
 	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation|Death", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation|Death")
 	TObjectPtr<UAnimMontage> LeftDeathMontage;
 	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation|Death", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation|Death")
 	TObjectPtr<UAnimMontage> RightDeathMontage;
 
 
