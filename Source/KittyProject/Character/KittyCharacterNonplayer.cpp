@@ -3,6 +3,7 @@
 
 #include "Character/KittyCharacterNonplayer.h"
 #include "AI/KittyAIController.h"
+#include "AI/Attack/KTGunAttackComponent.h"
 #include "Animation/AnimMontage.h"
 #include "Components/CapsuleComponent.h"
 #include "Engine/TargetPoint.h"
@@ -47,11 +48,15 @@ AKittyCharacterNonplayer::AKittyCharacterNonplayer()
 	}
 	
 	BatonAttackComponent = CreateDefaultSubobject<UKTBatonAttackComponent>(TEXT("BatonAttackComponent"));
+	
+	GunAttackComponent = CreateDefaultSubobject<UKTGunAttackComponent>(TEXT("GunAttackComponent"));
 }
 
 void AKittyCharacterNonplayer::BeginPlay()
 {
 	Super::BeginPlay();
+	
+	SetGuardWeaponType(GuardWeaponType);
 	
 	if (!CarriedItemClass || !GetWorld())
 	{
@@ -118,7 +123,7 @@ UKTGuardAttackComponent* AKittyCharacterNonplayer::GetAttackComponent() const
 		return BatonAttackComponent;
 		
 	case EGuardWeaponType::Gun:
-		return nullptr;
+		return GunAttackComponent;
 		
 	default:
 		return nullptr;
@@ -129,6 +134,22 @@ float AKittyCharacterNonplayer::GetAIAttackRange()
 {
 	const UKTGuardAttackComponent* AttackComponent = GetAttackComponent();
 	return AttackComponent ? AttackComponent->GetAttackRange() : 0.0f;
+}
+
+void AKittyCharacterNonplayer::SetGuardWeaponType(EGuardWeaponType NewType)
+{
+	if (GuardWeaponType != NewType)
+	{
+		StopAnimMontage();
+	}
+	
+	GuardWeaponType = NewType;
+	
+	BatonAttackComponent->SetActive(NewType == EGuardWeaponType::Baton);
+	
+	GunAttackComponent->SetActive(NewType == EGuardWeaponType::Gun);
+	
+	OnGuardWeaponTypeChanged(NewType);
 }
 
 float AKittyCharacterNonplayer::GetAITurnSpeed()
