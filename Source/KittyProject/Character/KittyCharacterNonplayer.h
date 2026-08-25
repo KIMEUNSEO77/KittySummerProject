@@ -14,7 +14,10 @@
 
 class UAnimMontage;
 class ATargetPoint;
- 
+class UKTBatonAttackComponent;
+class UKTGunAttackComponent;
+
+
 UENUM(BlueprintType)
 enum class EKittyDeathDirection : uint8
 {
@@ -139,8 +142,22 @@ public:
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI|Attack", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UKTBatonAttackComponent> BatonAttackComponent;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI|Attack", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UKTGunAttackComponent> GunAttackComponent;
 
 	UKTGuardAttackComponent* GetAttackComponent() const;
 	
 	virtual float GetAIAttackRange() override;
+	
+	UFUNCTION(BlueprintImplementableEvent, Category = "AI|Gun")
+	void FireGuardProjectile(AActor* Target, float Damage);
+	
+public:
+	//경비원의 상태 변경을 위한 변수
+	UFUNCTION(BlueprintCallable, Category = "AI|Weapon")
+	void SetGuardWeaponType(EGuardWeaponType NewType);
+	
+	UFUNCTION(BlueprintImplementableEvent, Category = "AI|Weapon")
+	void OnGuardWeaponTypeChanged(EGuardWeaponType NewType);
 };
