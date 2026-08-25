@@ -21,15 +21,18 @@ public:
 	virtual void Interact_Implementation(AActor* Interactor) override;
 	
 	// 총구의 월드 위치
+	UFUNCTION(BlueprintPure)
 	FVector GetMuzzleLocation() const;
 
 	// 총구가 바라보는 월드 방향
 	FVector GetMuzzleForwardVector() const;
 	
 	// 이펙트 재생
+	UFUNCTION(BlueprintCallable)
 	void PlayMuzzleFlash();
 	
 	// 권총 sound 재생
+	UFUNCTION(BlueprintCallable)
 	void PlayFireSound();
 	
 	// 총을 주울 때 플레이어가 위치할 Transform
