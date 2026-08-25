@@ -12,14 +12,14 @@ void UKTAnimNotify_GunFire::Notify(USkeletalMeshComponent* MeshComp, UAnimSequen
 {
 	Super::Notify(MeshComp, Animation, EventReference);
 	
-	if (IsValid(MeshComp))
+	if (!IsValid(MeshComp))
 	{
 		return;
 	}
 	
 	AKittyCharacterNonplayer* Guard = Cast<AKittyCharacterNonplayer>(MeshComp->GetOwner());
 	
-	if (IsValid(Guard))
+	if (!IsValid(Guard))
 	{
 		return;
 	}
