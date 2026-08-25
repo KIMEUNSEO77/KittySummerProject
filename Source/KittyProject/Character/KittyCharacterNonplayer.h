@@ -150,7 +150,11 @@ public:
 	
 	virtual float GetAIAttackRange() override;
 	
+	UFUNCTION(BlueprintImplementableEvent, Category = "AI|Gun")
+	void FireGuardProjectile(AActor* Target, float Damage);
+	
 public:
+	//경비원의 상태 변경을 위한 변수
 	UFUNCTION(BlueprintCallable, Category = "AI|Weapon")
 	void SetGuardWeaponType(EGuardWeaponType NewType);
 	
