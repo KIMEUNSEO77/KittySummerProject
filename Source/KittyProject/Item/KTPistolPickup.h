@@ -25,6 +25,7 @@ public:
 	FVector GetMuzzleLocation() const;
 
 	// 총구가 바라보는 월드 방향
+	UFUNCTION(BlueprintPure, Category="Pistol")
 	FVector GetMuzzleForwardVector() const;
 	
 	// 이펙트 재생
