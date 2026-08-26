@@ -10,6 +10,7 @@
 #include "Mission/KTMissionSubsystem.h"
 #include "GameplayTagContainer.h"
 #include "Engine/Engine.h"
+#include "Components/PointLightComponent.h"
 
 // Sets default values
 AKTKeycardDoor::AKTKeycardDoor()
@@ -39,6 +40,15 @@ AKTKeycardDoor::AKTKeycardDoor()
 	CardReaderMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("CardReaderMesh"));
 	CardReaderMesh->SetupAttachment(RootComponent);
 	CardReaderMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	
+	AccessGrantedLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("AccessGrantedLight"));
+	AccessGrantedLight->SetupAttachment(CardReaderMesh);
+	// 초록색 인증 조명
+	AccessGrantedLight->SetLightColor(FLinearColor(0.0f, 1.0f, 0.1f));
+	AccessGrantedLight->SetIntensity(1500.0f);
+	AccessGrantedLight->SetAttenuationRadius(150.0f);
+	// 인증 전에는 숨김
+	AccessGrantedLight->SetVisibility(false);
 }
 
 void AKTKeycardDoor::CompleteKeycardInteraction()
@@ -48,10 +58,15 @@ void AKTKeycardDoor::CompleteKeycardInteraction()
 	{
 		return;
 	}
-
+	
 	// 문 열기 시작
 	bIsOpening = true;
 	SetActorTickEnabled(true);
+	
+	if (IsValid(AccessGrantedLight))
+	{
+		AccessGrantedLight->SetVisibility(true);
+	}
 
 	// 다시 상호작용되지 않도록 충돌 비활성화
 	if (IsValid(InteractionCollision))

@@ -68,4 +68,8 @@ protected:
 	// 문이 열리는 속도
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Door")
 	float OpenSpeed = 1.0f;
+	
+	// 출입증 인증 성공 시 켜지는 초록색 조명
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Door|Components")
+	TObjectPtr<class UPointLightComponent> AccessGrantedLight;
 };
