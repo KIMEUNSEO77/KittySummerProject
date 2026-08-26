@@ -19,6 +19,9 @@ public:
 public:
 	// 출입증 사용 애니메이션의 Notify 순간에 문을 엶
 	void CompleteKeycardInteraction();
+	
+	// 상호작용 UI를 표시할 카드 단말기 위치
+	FVector GetInteractionPromptLocation() const;
 
 protected:
 	virtual void BeginPlay() override;

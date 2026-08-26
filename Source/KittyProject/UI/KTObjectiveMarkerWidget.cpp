@@ -8,6 +8,7 @@
 #include "Engine/Engine.h"
 #include "Engine/GameViewportClient.h"
 #include "GameFramework/PlayerController.h"
+#include "Interaction/KTKeycardDoor.h"
 
 void UKTObjectiveMarkerWidget::NativeConstruct()
 {
@@ -107,9 +108,15 @@ void UKTObjectiveMarkerWidget::UpdateMarker()
 		return;
 	}
 
-	const FVector TargetLocation =
+	FVector TargetLocation =
 		TargetActor->GetActorLocation() +
 		FVector(0.0f, 0.0f, 50.0f);
+	
+	// 출입증 문은 문 중심이 아니라 카드 단말기 위에 표시
+	if (const AKTKeycardDoor* KeycardDoor = Cast<AKTKeycardDoor>(TargetActor.Get()))
+	{
+		TargetLocation = KeycardDoor->GetInteractionPromptLocation() + FVector(0.0f, 0.0f, 10.0f);
+	}
 
 	const FVector CameraLocation =
 		PlayerController->PlayerCameraManager->GetCameraLocation();

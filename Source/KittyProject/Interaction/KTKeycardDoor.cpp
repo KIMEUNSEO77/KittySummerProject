@@ -70,6 +70,16 @@ void AKTKeycardDoor::CompleteKeycardInteraction()
 	}
 }
 
+FVector AKTKeycardDoor::GetInteractionPromptLocation() const
+{
+	if (IsValid(CardReaderMesh))
+	{
+		return CardReaderMesh->GetComponentLocation();
+	}
+
+	return GetActorLocation();
+}
+
 void AKTKeycardDoor::BeginPlay()
 {
 	Super::BeginPlay();
