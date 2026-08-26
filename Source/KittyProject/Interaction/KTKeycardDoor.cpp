@@ -35,6 +35,10 @@ AKTKeycardDoor::AKTKeycardDoor()
 
 	// 플레이어와 총의 Line Trace가 문을 통과하지 않도록 설정
 	DoorMesh->SetCollisionProfileName(TEXT("BlockAll"));
+	
+	CardReaderMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("CardReaderMesh"));
+	CardReaderMesh->SetupAttachment(RootComponent);
+	CardReaderMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
 void AKTKeycardDoor::BeginPlay()
@@ -94,6 +98,12 @@ void AKTKeycardDoor::Interact_Implementation(AActor* Interactor)
 	AKittyCharacterPlayer* Player = Cast<AKittyCharacterPlayer>(Interactor);
 
 	if (!IsValid(Player))
+	{
+		return;
+	}
+	
+	// 플레이어가 카드 단말기의 상호작용 범위 안에 있는지 확인
+	if (!InteractionCollision->IsOverlappingActor(Player))
 	{
 		return;
 	}

@@ -32,6 +32,10 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Door|Components")
 	TObjectPtr<UStaticMeshComponent> DoorMesh;
 	
+	// 문 옆에 설치되는 출입증 인식 단말기
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Door|Components")
+	TObjectPtr<UStaticMeshComponent> CardReaderMesh;
+	
 	// F키를 눌렀을 때 실행되는 상호작용
 	virtual void Interact_Implementation(AActor* Interactor) override;
 
