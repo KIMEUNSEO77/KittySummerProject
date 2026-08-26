@@ -10,6 +10,7 @@
 #include "Mission/KTMissionSubsystem.h"
 #include "GameplayTagContainer.h"
 #include "Engine/Engine.h"
+#include "Components/PointLightComponent.h"
 
 // Sets default values
 AKTKeycardDoor::AKTKeycardDoor()
@@ -35,6 +36,63 @@ AKTKeycardDoor::AKTKeycardDoor()
 
 	// 플레이어와 총의 Line Trace가 문을 통과하지 않도록 설정
 	DoorMesh->SetCollisionProfileName(TEXT("BlockAll"));
+	
+	CardReaderMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("CardReaderMesh"));
+	CardReaderMesh->SetupAttachment(RootComponent);
+	CardReaderMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	
+	AccessGrantedLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("AccessGrantedLight"));
+	AccessGrantedLight->SetupAttachment(CardReaderMesh);
+	// 초록색 인증 조명
+	AccessGrantedLight->SetLightColor(FLinearColor(0.0f, 1.0f, 0.1f));
+	AccessGrantedLight->SetIntensity(1500.0f);
+	AccessGrantedLight->SetAttenuationRadius(150.0f);
+	// 인증 전에는 숨김
+	AccessGrantedLight->SetVisibility(false);
+}
+
+void AKTKeycardDoor::CompleteKeycardInteraction()
+{
+	// 이미 열렸거나 열리는 중이면 실행하지 않음
+	if (bIsOpen || bIsOpening)
+	{
+		return;
+	}
+	
+	// 문 열기 시작
+	bIsOpening = true;
+	SetActorTickEnabled(true);
+	
+	if (IsValid(AccessGrantedLight))
+	{
+		AccessGrantedLight->SetVisibility(true);
+	}
+
+	// 다시 상호작용되지 않도록 충돌 비활성화
+	if (IsValid(InteractionCollision))
+	{
+		InteractionCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
+
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(
+			-1,
+			2.0f,
+			FColor::Green,
+			TEXT("출입증 인증 완료")
+		);
+	}
+}
+
+FVector AKTKeycardDoor::GetInteractionPromptLocation() const
+{
+	if (IsValid(CardReaderMesh))
+	{
+		return CardReaderMesh->GetComponentLocation();
+	}
+
+	return GetActorLocation();
 }
 
 void AKTKeycardDoor::BeginPlay()
@@ -97,6 +155,12 @@ void AKTKeycardDoor::Interact_Implementation(AActor* Interactor)
 	{
 		return;
 	}
+	
+	// 플레이어가 카드 단말기의 상호작용 범위 안에 있는지 확인
+	if (!InteractionCollision->IsOverlappingActor(Player))
+	{
+		return;
+	}
 
 	// 플레이어의 인벤토리 가져오기
 	UKTInventoryComponent* Inventory = Player->GetInventoryComponent();
@@ -140,12 +204,8 @@ void AKTKeycardDoor::Interact_Implementation(AActor* Interactor)
 		return;
 	}
 
-	// 문 열기 시작
-	bIsOpening = true;
-	SetActorTickEnabled(true);
-
-	// 열린 뒤에는 다시 상호작용 대상으로 감지하지 않도록 비활성화
-	InteractionCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	// 출입증 사용 애니메이션 시작
+	Player->StartKeycardDoorInteraction(this);
 }
 
 FText AKTKeycardDoor::GetInteractionText_Implementation() const

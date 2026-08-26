@@ -30,6 +30,7 @@
 #include "Item/KTItemPickupBase.h"
 #include "Animation/AnimMontage.h"
 #include "MotionWarpingComponent.h"
+#include "Interaction/KTKeycardDoor.h"
 
 AKittyCharacterPlayer::AKittyCharacterPlayer()
 {
@@ -144,6 +145,12 @@ AKittyCharacterPlayer::AKittyCharacterPlayer()
 	}
 	
 	MotionWarpingComponent = CreateDefaultSubobject<UMotionWarpingComponent>(TEXT("MotionWarpingComponent"));
+	
+	KeycardUseMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("KeycardUseMesh"));
+	KeycardUseMesh->SetupAttachment(GetMesh(), TEXT("ItemPickupSocket"));
+	KeycardUseMesh->SetVisibility(false);
+	KeycardUseMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	KeycardUseMesh->SetCastShadow(false);
 }
 
 void AKittyCharacterPlayer::BeginPlay()
@@ -839,6 +846,42 @@ void AKittyCharacterPlayer::StartItemPickup(class AKTItemPickupBase* ItemPickup,
 	}
 }
 
+void AKittyCharacterPlayer::StartKeycardDoorInteraction(class AKTKeycardDoor* KeycardDoor)
+{
+	if (bIsPerformingInteraction || !IsValid(KeycardDoor) || !IsValid(KeycardUseMontage))
+	{
+		return;
+	}
+
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+	if (!IsValid(AnimInstance))
+	{
+		return;
+	}
+
+	PendingKeycardDoor = KeycardDoor;
+
+	// 조준 중이었다면 조준 해제
+	StopAiming();
+
+	// 이동과 카메라 조작 잠금
+	BeginInteractionLock();
+
+	AnimInstance->OnPlayMontageNotifyBegin.AddUniqueDynamic(this, &AKittyCharacterPlayer::HandleInteractionNotify);
+
+	AnimInstance->OnMontageEnded.AddUniqueDynamic(this, &AKittyCharacterPlayer::HandleInteractionMontageEnded);
+
+	const float PlayedDuration = AnimInstance->Montage_Play(KeycardUseMontage);
+
+	// 몽타주 재생 실패 시 정리
+	if (PlayedDuration <= 0.0f)
+	{
+		PendingKeycardDoor = nullptr;
+		EndInteractionLock();
+	}
+}
+
 void AKittyCharacterPlayer::BeginInteractionLock()
 {
 	bIsPerformingInteraction = true;
@@ -867,6 +910,39 @@ void AKittyCharacterPlayer::HandleInteractionNotify(FName NotifyName, const FBra
 {
 	if (!bIsPerformingInteraction)
 	{
+		return;
+	}
+	
+	// 손에 출입증 표시
+	if (NotifyName == TEXT("ShowKeycard"))
+	{
+		if (IsValid(KeycardUseMesh))
+		{
+			KeycardUseMesh->SetVisibility(true);
+		}
+
+		return;
+	}
+	
+	// 출입증을 단말기에 대는 순간
+	if (NotifyName == TEXT("UseKeycard"))
+	{
+		if (IsValid(PendingKeycardDoor))
+		{
+			PendingKeycardDoor->CompleteKeycardInteraction();
+		}
+
+		return;
+	}
+	
+	// 손에 표시한 출입증 숨기기
+	if (NotifyName == TEXT("HideKeycard"))
+	{
+		if (IsValid(KeycardUseMesh))
+		{
+			KeycardUseMesh->SetVisibility(false);
+		}
+
 		return;
 	}
 
@@ -923,8 +999,9 @@ void AKittyCharacterPlayer::HandleInteractionMontageEnded(UAnimMontage* Montage,
 {
 	const bool bPistolMontageEnded = Montage == PistolPickupMontage;
 	const bool bItemMontageEnded = Montage == ActiveItemPickupMontage;
+	const bool bKeycardMontageEnded = Montage == KeycardUseMontage;
 
-	if (!bPistolMontageEnded && !bItemMontageEnded)
+	if (!bPistolMontageEnded && !bItemMontageEnded && !bKeycardMontageEnded)
 	{
 		return;
 	}
@@ -933,10 +1010,16 @@ void AKittyCharacterPlayer::HandleInteractionMontageEnded(UAnimMontage* Montage,
 	{
 		MotionWarpingComponent->RemoveWarpTarget(TEXT("PistolPickupTarget"));
 	}
+	
+	if (bKeycardMontageEnded && IsValid(KeycardUseMesh))
+	{
+		KeycardUseMesh->SetVisibility(false);
+	}
 
 	PendingPistolPickup = nullptr;
 	PendingItemPickup = nullptr;
 	ActiveItemPickupMontage = nullptr;
+	PendingKeycardDoor = nullptr;
 
 	EndInteractionLock();
 }

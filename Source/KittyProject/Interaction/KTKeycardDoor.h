@@ -15,6 +15,13 @@ class KITTYPROJECT_API AKTKeycardDoor : public AActor, public IKTInteractableInt
 public:	
 	// Sets default values for this actor's properties
 	AKTKeycardDoor();
+	
+public:
+	// 출입증 사용 애니메이션의 Notify 순간에 문을 엶
+	void CompleteKeycardInteraction();
+	
+	// 상호작용 UI를 표시할 카드 단말기 위치
+	FVector GetInteractionPromptLocation() const;
 
 protected:
 	virtual void BeginPlay() override;
@@ -31,6 +38,10 @@ protected:
 	// 실제로 열릴 문 메시
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Door|Components")
 	TObjectPtr<UStaticMeshComponent> DoorMesh;
+	
+	// 문 옆에 설치되는 출입증 인식 단말기
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Door|Components")
+	TObjectPtr<UStaticMeshComponent> CardReaderMesh;
 	
 	// F키를 눌렀을 때 실행되는 상호작용
 	virtual void Interact_Implementation(AActor* Interactor) override;
@@ -57,4 +68,8 @@ protected:
 	// 문이 열리는 속도
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Door")
 	float OpenSpeed = 1.0f;
+	
+	// 출입증 인증 성공 시 켜지는 초록색 조명
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Door|Components")
+	TObjectPtr<class UPointLightComponent> AccessGrantedLight;
 };
