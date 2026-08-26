@@ -15,6 +15,10 @@ class KITTYPROJECT_API AKTKeycardDoor : public AActor, public IKTInteractableInt
 public:	
 	// Sets default values for this actor's properties
 	AKTKeycardDoor();
+	
+public:
+	// 출입증 사용 애니메이션의 Notify 순간에 문을 엶
+	void CompleteKeycardInteraction();
 
 protected:
 	virtual void BeginPlay() override;

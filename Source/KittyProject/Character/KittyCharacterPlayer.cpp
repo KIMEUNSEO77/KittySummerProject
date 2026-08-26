@@ -145,6 +145,12 @@ AKittyCharacterPlayer::AKittyCharacterPlayer()
 	}
 	
 	MotionWarpingComponent = CreateDefaultSubobject<UMotionWarpingComponent>(TEXT("MotionWarpingComponent"));
+	
+	KeycardUseMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("KeycardUseMesh"));
+	KeycardUseMesh->SetupAttachment(GetMesh(), TEXT("ItemPickupSocket"));
+	KeycardUseMesh->SetVisibility(false);
+	KeycardUseMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	KeycardUseMesh->SetCastShadow(false);
 }
 
 void AKittyCharacterPlayer::BeginPlay()
@@ -906,6 +912,39 @@ void AKittyCharacterPlayer::HandleInteractionNotify(FName NotifyName, const FBra
 	{
 		return;
 	}
+	
+	// 손에 출입증 표시
+	if (NotifyName == TEXT("ShowKeycard"))
+	{
+		if (IsValid(KeycardUseMesh))
+		{
+			KeycardUseMesh->SetVisibility(true);
+		}
+
+		return;
+	}
+	
+	// 출입증을 단말기에 대는 순간
+	if (NotifyName == TEXT("UseKeycard"))
+	{
+		if (IsValid(PendingKeycardDoor))
+		{
+			PendingKeycardDoor->CompleteKeycardInteraction();
+		}
+
+		return;
+	}
+	
+	// 손에 표시한 출입증 숨기기
+	if (NotifyName == TEXT("HideKeycard"))
+	{
+		if (IsValid(KeycardUseMesh))
+		{
+			KeycardUseMesh->SetVisibility(false);
+		}
+
+		return;
+	}
 
 	// 권총 획득 Notify
 	if (NotifyName == TEXT("PickupPistol"))
@@ -970,6 +1009,11 @@ void AKittyCharacterPlayer::HandleInteractionMontageEnded(UAnimMontage* Montage,
 	if (bPistolMontageEnded && IsValid(MotionWarpingComponent))
 	{
 		MotionWarpingComponent->RemoveWarpTarget(TEXT("PistolPickupTarget"));
+	}
+	
+	if (bKeycardMontageEnded && IsValid(KeycardUseMesh))
+	{
+		KeycardUseMesh->SetVisibility(false);
 	}
 
 	PendingPistolPickup = nullptr;

@@ -41,6 +41,35 @@ AKTKeycardDoor::AKTKeycardDoor()
 	CardReaderMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
+void AKTKeycardDoor::CompleteKeycardInteraction()
+{
+	// 이미 열렸거나 열리는 중이면 실행하지 않음
+	if (bIsOpen || bIsOpening)
+	{
+		return;
+	}
+
+	// 문 열기 시작
+	bIsOpening = true;
+	SetActorTickEnabled(true);
+
+	// 다시 상호작용되지 않도록 충돌 비활성화
+	if (IsValid(InteractionCollision))
+	{
+		InteractionCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
+
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(
+			-1,
+			2.0f,
+			FColor::Green,
+			TEXT("출입증 인증 완료")
+		);
+	}
+}
+
 void AKTKeycardDoor::BeginPlay()
 {
 	Super::BeginPlay();
@@ -152,15 +181,6 @@ void AKTKeycardDoor::Interact_Implementation(AActor* Interactor)
 
 	// 출입증 사용 애니메이션 시작
 	Player->StartKeycardDoorInteraction(this);
-	
-	/*
-	// 문 열기 시작
-	bIsOpening = true;
-	SetActorTickEnabled(true);
-
-	// 열린 뒤에는 다시 상호작용 대상으로 감지하지 않도록 비활성화
-	InteractionCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	*/
 }
 
 FText AKTKeycardDoor::GetInteractionText_Implementation() const

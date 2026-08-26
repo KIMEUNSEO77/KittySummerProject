@@ -273,4 +273,8 @@ protected:
 	// 애니메이션이 끝날 때까지 기억할 출입증 문
 	UPROPERTY()
 	TObjectPtr<class AKTKeycardDoor> PendingKeycardDoor;
+	
+	// 출입증 사용 연출 동안 손에 표시할 카드키 메시
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Interaction|Keycard")
+	TObjectPtr<class UStaticMeshComponent> KeycardUseMesh;
 };
