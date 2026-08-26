@@ -30,6 +30,7 @@
 #include "Item/KTItemPickupBase.h"
 #include "Animation/AnimMontage.h"
 #include "MotionWarpingComponent.h"
+#include "Interaction/KTKeycardDoor.h"
 
 AKittyCharacterPlayer::AKittyCharacterPlayer()
 {
@@ -839,6 +840,42 @@ void AKittyCharacterPlayer::StartItemPickup(class AKTItemPickupBase* ItemPickup,
 	}
 }
 
+void AKittyCharacterPlayer::StartKeycardDoorInteraction(class AKTKeycardDoor* KeycardDoor)
+{
+	if (bIsPerformingInteraction || !IsValid(KeycardDoor) || !IsValid(KeycardUseMontage))
+	{
+		return;
+	}
+
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+	if (!IsValid(AnimInstance))
+	{
+		return;
+	}
+
+	PendingKeycardDoor = KeycardDoor;
+
+	// 조준 중이었다면 조준 해제
+	StopAiming();
+
+	// 이동과 카메라 조작 잠금
+	BeginInteractionLock();
+
+	AnimInstance->OnPlayMontageNotifyBegin.AddUniqueDynamic(this, &AKittyCharacterPlayer::HandleInteractionNotify);
+
+	AnimInstance->OnMontageEnded.AddUniqueDynamic(this, &AKittyCharacterPlayer::HandleInteractionMontageEnded);
+
+	const float PlayedDuration = AnimInstance->Montage_Play(KeycardUseMontage);
+
+	// 몽타주 재생 실패 시 정리
+	if (PlayedDuration <= 0.0f)
+	{
+		PendingKeycardDoor = nullptr;
+		EndInteractionLock();
+	}
+}
+
 void AKittyCharacterPlayer::BeginInteractionLock()
 {
 	bIsPerformingInteraction = true;
@@ -923,8 +960,9 @@ void AKittyCharacterPlayer::HandleInteractionMontageEnded(UAnimMontage* Montage,
 {
 	const bool bPistolMontageEnded = Montage == PistolPickupMontage;
 	const bool bItemMontageEnded = Montage == ActiveItemPickupMontage;
+	const bool bKeycardMontageEnded = Montage == KeycardUseMontage;
 
-	if (!bPistolMontageEnded && !bItemMontageEnded)
+	if (!bPistolMontageEnded && !bItemMontageEnded && !bKeycardMontageEnded)
 	{
 		return;
 	}
@@ -937,6 +975,7 @@ void AKittyCharacterPlayer::HandleInteractionMontageEnded(UAnimMontage* Montage,
 	PendingPistolPickup = nullptr;
 	PendingItemPickup = nullptr;
 	ActiveItemPickupMontage = nullptr;
+	PendingKeycardDoor = nullptr;
 
 	EndInteractionLock();
 }

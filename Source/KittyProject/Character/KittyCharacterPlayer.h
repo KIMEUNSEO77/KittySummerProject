@@ -225,6 +225,9 @@ public:
 	// 일반 아이템 획득 애니메이션 시작
 	void StartItemPickup(class AKTItemPickupBase* ItemPickup, class UAnimMontage* ItemMontage);
 	
+	// 출입증 사용 애니메이션 시작
+	void StartKeycardDoorInteraction(class AKTKeycardDoor* KeycardDoor);
+	
 protected:
 	// 상호작용 애니메이션 실행 여부
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Interaction")
@@ -262,4 +265,12 @@ protected:
 	// 현재 실행 중인 일반 아이템 몽타주
 	UPROPERTY()
 	TObjectPtr<class UAnimMontage> ActiveItemPickupMontage;
+	
+	// 출입증 사용 몽타주
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Interaction|Animation")
+	TObjectPtr<class UAnimMontage> KeycardUseMontage;
+
+	// 애니메이션이 끝날 때까지 기억할 출입증 문
+	UPROPERTY()
+	TObjectPtr<class AKTKeycardDoor> PendingKeycardDoor;
 };

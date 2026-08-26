@@ -150,12 +150,17 @@ void AKTKeycardDoor::Interact_Implementation(AActor* Interactor)
 		return;
 	}
 
+	// 출입증 사용 애니메이션 시작
+	Player->StartKeycardDoorInteraction(this);
+	
+	/*
 	// 문 열기 시작
 	bIsOpening = true;
 	SetActorTickEnabled(true);
 
 	// 열린 뒤에는 다시 상호작용 대상으로 감지하지 않도록 비활성화
 	InteractionCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	*/
 }
 
 FText AKTKeycardDoor::GetInteractionText_Implementation() const
