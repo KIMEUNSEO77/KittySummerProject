@@ -29,11 +29,15 @@ AKTSecurityCamera::AKTSecurityCamera()
 	WarningLight->SetupAttachment(CameraPivot);
 
 	// 붉은 조명
+	WarningLight->SetMobility(EComponentMobility::Movable);
+	WarningLight->SetVisibility(true);
 	WarningLight->SetLightColor(FLinearColor::Red);
-	WarningLight->SetIntensity(5000.0f);
-	WarningLight->SetAttenuationRadius(1500.0f);
+	WarningLight->SetIntensity(100000.0f);
+	WarningLight->SetAttenuationRadius(2000.0f);
 	WarningLight->SetInnerConeAngle(10.0f);
 	WarningLight->SetOuterConeAngle(25.0f);
+	WarningLight->SetVolumetricScatteringIntensity(5.0f);
+	WarningLight->SetCastShadows(false);
 }
 
 void AKTSecurityCamera::Tick(float DeltaTime)
