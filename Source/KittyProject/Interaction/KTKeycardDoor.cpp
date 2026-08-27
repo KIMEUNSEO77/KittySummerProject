@@ -73,16 +73,6 @@ void AKTKeycardDoor::CompleteKeycardInteraction()
 	{
 		InteractionCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	}
-
-	if (GEngine)
-	{
-		GEngine->AddOnScreenDebugMessage(
-			-1,
-			2.0f,
-			FColor::Green,
-			TEXT("출입증 인증 완료")
-		);
-	}
 }
 
 FVector AKTKeycardDoor::GetInteractionPromptLocation() const
@@ -186,16 +176,6 @@ void AKTKeycardDoor::Interact_Implementation(AActor* Interactor)
 		}
 
 		return;
-	}
-
-	if (GEngine)
-	{
-		GEngine->AddOnScreenDebugMessage(
-			-1,
-			2.0f,
-			FColor::Green,
-			TEXT("출입증 확인 완료!")
-		);
 	}
 	
 	// 이미 열렸거나 열리는 중이라면 다시 실행하지 않음

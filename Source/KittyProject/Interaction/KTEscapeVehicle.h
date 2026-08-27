@@ -8,6 +8,8 @@
 #include "GameplayTagContainer.h"
 #include "KTEscapeVehicle.generated.h"
 
+struct FBranchingPointNotifyPayload;
+
 UCLASS()
 class KITTYPROJECT_API AKTEscapeVehicle : public AActor,  public IKTInteractableInterface
 {
@@ -23,6 +25,12 @@ public:
 	// 시네마틱 재생이 끝났을 때 호출
 	UFUNCTION()
 	void HandleSequenceFinished();
+	
+	// 탑승 몽타주의 EnterVehicle Notify를 처리
+	UFUNCTION()
+	void HandleEnterVehicleNotify(FName NotifyName, const FBranchingPointNotifyPayload& BranchingPointPayload);
+	
+	virtual void Tick(float DeltaTime) override;
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Vehicle|Components")
@@ -65,4 +73,36 @@ protected:
 	
 	// 엔딩 시네마틱 종료 후 게임 종료
 	void QuitGameAfterEnding();
+	
+	// 차량 탑승 애니메이션을 시작할 위치
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Vehicle|Components")
+	TObjectPtr<class USceneComponent> VehicleEntryPoint;
+
+	// 차량 탑승 애니메이션 몽타주
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Vehicle|Animation")
+	TObjectPtr<class UAnimMontage> EnterVehicleMontage;
+	
+	// 운전석 문의 회전 중심
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Vehicle|Components")
+	TObjectPtr<class USceneComponent> DriverDoorPivot;
+
+	// 운전석 문 메시
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Vehicle|Components")
+	TObjectPtr<class UStaticMeshComponent> DriverDoorMesh;
+	
+	virtual void BeginPlay() override;
+
+	// 문이 열릴 각도
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Vehicle|Door")
+	float DriverDoorOpenAngle = 65.0f;
+
+	// 문이 열리는 속도: 초당 회전 각도
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Vehicle|Door")
+	float DriverDoorOpenSpeed = 80.0f;
+
+	// 문의 처음 닫힌 회전값
+	FRotator DriverDoorClosedRotation;
+
+	// 현재 문이 열리는 중인지
+	bool bIsDriverDoorOpening = false;
 };
