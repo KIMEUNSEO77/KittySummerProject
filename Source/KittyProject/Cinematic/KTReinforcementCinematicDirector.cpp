@@ -124,7 +124,12 @@ void AKTReinforcementCinematicDirector::StartCinematic()
 
 	if (CinematicCamera)
 	{
-		CinematicCamera->GetCineCameraComponent()->SetFieldOfView(52.0f);
+		UCineCameraComponent* CineCamera =
+		CinematicCamera->GetCineCameraComponent();
+
+		CineCamera->SetFieldOfView(52.0f);
+		CineCamera->SetConstraintAspectRatio(true);
+		CineCamera->SetAspectRatio(2.35f);
 	}
 
 	const int32 SafeGuardCount = FMath::Clamp(GuardCount, 10, 15);
