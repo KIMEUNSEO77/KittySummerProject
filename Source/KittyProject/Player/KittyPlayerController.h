@@ -143,4 +143,7 @@ protected:
     TObjectPtr<class USoundBase> InventoryCloseSound;
 
 	bool bIsInventoryOpen = false;
+	
+	// 시네마틱으로 게임 UI를 숨긴 상태인지 확인
+	bool bIsGameplayUIHidden = false;
 };

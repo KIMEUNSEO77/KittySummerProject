@@ -121,15 +121,7 @@ void AKittyPlayerController::HandleMissionNextStepQueued(
 		);
 	}
 
-	if (MissionNotificationWidget)
-	{
-		MissionNotificationWidget->ShowNewMission(
-			MissionTitle,
-			NextStep.Description
-		);
-	}
-	
-	if (MissionNotificationWidget)
+	if (MissionNotificationWidget && !bIsGameplayUIHidden)
 	{
 		MissionNotificationWidget->ShowNewMission(
 			MissionTitle,
@@ -169,9 +161,18 @@ void AKittyPlayerController::HandleMissionStepChanged(
 
 	if (ObjectiveMarkerWidget && MissionSubsystem)
 	{
+		// 다음 목표는 저장하되
 		ObjectiveMarkerWidget->SetTargetActor(
 			MissionSubsystem->GetCurrentTargetActor()
 		);
+
+		// 시네마틱 중이면 화면에는 표시하지 않음
+		if (bIsGameplayUIHidden)
+		{
+			ObjectiveMarkerWidget->SetVisibility(
+				ESlateVisibility::Collapsed
+			);
+		}
 	}
 }
 
@@ -371,32 +372,50 @@ void AKittyPlayerController::HideObjectiveInteractionPrompt()
 
 void AKittyPlayerController::SetGameplayUIVisible(bool bVisible)
 {
-	const ESlateVisibility NewVisibility = bVisible ? ESlateVisibility::Visible : ESlateVisibility::Collapsed;
+	bIsGameplayUIHidden = !bVisible;
+	
+	if (!bVisible)
+	{
+		// 시네마틱 시작: 현재 게임 UI 숨기기
+		if (MissionTrackerWidget)
+		{
+			MissionTrackerWidget->SetVisibility(
+				ESlateVisibility::Collapsed);
+		}
 
+		if (ObjectiveMarkerWidget)
+		{
+			ObjectiveMarkerWidget->SetVisibility(
+				ESlateVisibility::Collapsed);
+		}
+
+		if (MissionNotificationWidget)
+		{
+			MissionNotificationWidget->SetVisibility(
+				ESlateVisibility::Collapsed);
+		}
+
+		// 인벤토리와 조사 UI는 열려 있었다면 정상적으로 닫기
+		CloseInventory();
+		CloseExamine();
+
+		return;
+	}
+
+	// 시네마틱 종료: 항상 떠 있어야 하는 HUD만 복구
 	if (MissionTrackerWidget)
 	{
-		MissionTrackerWidget->SetVisibility(NewVisibility);
+		MissionTrackerWidget->SetVisibility(
+			ESlateVisibility::Visible);
 	}
 
 	if (ObjectiveMarkerWidget)
 	{
-		ObjectiveMarkerWidget->SetVisibility(NewVisibility);
+		ObjectiveMarkerWidget->SetVisibility(
+			ESlateVisibility::Visible);
 	}
 
-	if (MissionNotificationWidget)
-	{
-		MissionNotificationWidget->SetVisibility(NewVisibility);
-	}
-
-	if (InventoryWidget)
-	{
-		InventoryWidget->SetVisibility(NewVisibility);
-	}
-
-	if (ExamineWidget)
-	{
-		ExamineWidget->SetVisibility(NewVisibility);
-	}
+	// 알림·인벤토리·조사 UI는 자동으로 다시 열지 않음
 }
 
 void AKittyPlayerController::OpenExamine(

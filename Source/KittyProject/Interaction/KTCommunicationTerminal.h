@@ -16,6 +16,9 @@ public:
 	// Sets default values for this actor's properties
 	AKTCommunicationTerminal();
 	
+	// 조작 몽타주가 정상 종료된 뒤 홀로그램과 미션을 처리
+	void CompleteTerminalInteraction(AActor* Interactor);
+	
 protected:
 	// 액터의 기준이 되는 루트
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Terminal|Components")
