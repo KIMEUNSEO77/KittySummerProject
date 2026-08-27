@@ -10,6 +10,7 @@
 #include "Components/WidgetComponent.h"
 #include "Mission/KTMissionSubsystem.h"
 #include "GameplayTagContainer.h"
+#include "Character/KittyCharacterPlayer.h"
 
 // Sets default values
 AKTCommunicationTerminal::AKTCommunicationTerminal()
@@ -56,14 +57,9 @@ AKTCommunicationTerminal::AKTCommunicationTerminal()
 	HologramWidget->SetVisibility(false);
 }
 
-void AKTCommunicationTerminal::Interact_Implementation(AActor* Interactor)
+void AKTCommunicationTerminal::CompleteTerminalInteraction(AActor* Interactor)
 {
-	if (!IsValid(Interactor))
-	{
-		return;
-	}
-	
-	// 이미 조사한 단말기라면 다시 실행하지 않음
+	// 중복 완료 방지
 	if (bIsInvestigated)
 	{
 		return;
@@ -75,9 +71,9 @@ void AKTCommunicationTerminal::Interact_Implementation(AActor* Interactor)
 	{
 		HologramWidget->SetVisibility(true);
 	}
+
 	// 통신 단말기 조사 완료 이벤트 전송
-	if (UKTMissionSubsystem* MissionSubsystem =
-		UKTMissionSubsystem::Get(this))
+	if (UKTMissionSubsystem* MissionSubsystem = UKTMissionSubsystem::Get(this))
 	{
 		const FGameplayTag TerminalExaminedTag =
 			FGameplayTag::RequestGameplayTag(
@@ -87,21 +83,27 @@ void AKTCommunicationTerminal::Interact_Implementation(AActor* Interactor)
 				)
 			);
 
-		MissionSubsystem->BroadcastMissionEvent(
-			TerminalExaminedTag,
-			Interactor
-		);
+		MissionSubsystem->BroadcastMissionEvent(TerminalExaminedTag, Interactor);
 	}
-	
-	if (GEngine)
+
+	// 다시 상호작용되지 않도록 충돌 비활성화
+	if (IsValid(InteractionCollision))
 	{
-		GEngine->AddOnScreenDebugMessage(
-			-1,
-			2.0f,
-			FColor::Green,
-			TEXT("통신 단말기 조사 완료")
-		);
+		InteractionCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	}
+}
+
+void AKTCommunicationTerminal::Interact_Implementation(AActor* Interactor)
+{
+	AKittyCharacterPlayer* Player = Cast<AKittyCharacterPlayer>(Interactor);
+
+	if (!IsValid(Player) || bIsInvestigated)
+	{
+		return;
+	}
+
+	// 홀로그램을 바로 띄우지 않고 조작 애니메이션부터 시작
+	Player->StartTerminalInteraction(this);
 }
 
 FText AKTCommunicationTerminal::GetInteractionText_Implementation() const

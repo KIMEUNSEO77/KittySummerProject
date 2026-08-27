@@ -31,6 +31,7 @@
 #include "Animation/AnimMontage.h"
 #include "MotionWarpingComponent.h"
 #include "Interaction/KTKeycardDoor.h"
+#include "Interaction/KTCommunicationTerminal.h"
 
 AKittyCharacterPlayer::AKittyCharacterPlayer()
 {
@@ -882,6 +883,40 @@ void AKittyCharacterPlayer::StartKeycardDoorInteraction(class AKTKeycardDoor* Ke
 	}
 }
 
+void AKittyCharacterPlayer::StartTerminalInteraction(class AKTCommunicationTerminal* Terminal)
+{
+	if (bIsPerformingInteraction || !IsValid(Terminal) || !IsValid(TerminalInteractionMontage))
+	{
+		return;
+	}
+
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+	if (!IsValid(AnimInstance))
+	{
+		return;
+	}
+
+	PendingTerminal = Terminal;
+
+	// 조준 상태 해제
+	StopAiming();
+
+	// 이동과 카메라 조작 잠금
+	BeginInteractionLock();
+
+	AnimInstance->OnMontageEnded.AddUniqueDynamic(this, &AKittyCharacterPlayer::HandleInteractionMontageEnded);
+
+	const float PlayedDuration = AnimInstance->Montage_Play(TerminalInteractionMontage);
+
+	// 몽타주 재생 실패 시 정리
+	if (PlayedDuration <= 0.0f)
+	{
+		PendingTerminal = nullptr;
+		EndInteractionLock();
+	}
+}
+
 void AKittyCharacterPlayer::BeginInteractionLock()
 {
 	bIsPerformingInteraction = true;
@@ -1000,8 +1035,9 @@ void AKittyCharacterPlayer::HandleInteractionMontageEnded(UAnimMontage* Montage,
 	const bool bPistolMontageEnded = Montage == PistolPickupMontage;
 	const bool bItemMontageEnded = Montage == ActiveItemPickupMontage;
 	const bool bKeycardMontageEnded = Montage == KeycardUseMontage;
+	const bool bTerminalMontageEnded = Montage == TerminalInteractionMontage;
 
-	if (!bPistolMontageEnded && !bItemMontageEnded && !bKeycardMontageEnded)
+	if (!bPistolMontageEnded && !bItemMontageEnded && !bKeycardMontageEnded && !bTerminalMontageEnded)
 	{
 		return;
 	}
@@ -1015,11 +1051,17 @@ void AKittyCharacterPlayer::HandleInteractionMontageEnded(UAnimMontage* Montage,
 	{
 		KeycardUseMesh->SetVisibility(false);
 	}
+	
+	if (bTerminalMontageEnded && !bInterrupted && IsValid(PendingTerminal))
+	{
+		PendingTerminal->CompleteTerminalInteraction(this);
+	}
 
 	PendingPistolPickup = nullptr;
 	PendingItemPickup = nullptr;
 	ActiveItemPickupMontage = nullptr;
 	PendingKeycardDoor = nullptr;
+	PendingTerminal = nullptr;
 
 	EndInteractionLock();
 }

@@ -228,6 +228,9 @@ public:
 	// 출입증 사용 애니메이션 시작
 	void StartKeycardDoorInteraction(class AKTKeycardDoor* KeycardDoor);
 	
+	// 통신 단말기 조작 애니메이션 시작
+	void StartTerminalInteraction(class AKTCommunicationTerminal* Terminal);
+	
 protected:
 	// 상호작용 애니메이션 실행 여부
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Interaction")
@@ -277,4 +280,12 @@ protected:
 	// 출입증 사용 연출 동안 손에 표시할 카드키 메시
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Interaction|Keycard")
 	TObjectPtr<class UStaticMeshComponent> KeycardUseMesh;
+	
+	// 통신 단말기 조작 몽타주
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Interaction|Animation")
+	TObjectPtr<class UAnimMontage> TerminalInteractionMontage;
+
+	// 애니메이션이 끝날 때까지 기억할 통신 단말기
+	UPROPERTY()
+	TObjectPtr<class AKTCommunicationTerminal> PendingTerminal;
 };

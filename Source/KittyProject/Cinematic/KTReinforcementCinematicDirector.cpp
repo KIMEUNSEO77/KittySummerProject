@@ -10,6 +10,7 @@
 #include "Mission/KTMissionSubsystem.h"
 #include "TimerManager.h"
 #include "UObject/ConstructorHelpers.h"
+#include "Player/KittyPlayerController.h"
 
 namespace
 {
@@ -405,6 +406,13 @@ void AKTReinforcementCinematicDirector::SetPlayerCinematicMode(bool bEnabled)
 		true,
 		true);
 
+	// 시네마틱 중에는 UI 숨김, 종료되면 다시 표시
+	if (AKittyPlayerController* KittyPlayerController =
+		Cast<AKittyPlayerController>(PlayerController))
+	{
+		KittyPlayerController->SetGameplayUIVisible(!bEnabled);
+	}
+	
 	if (bEnabled && CinematicCamera)
 	{
 		PlayerController->SetViewTarget(CinematicCamera);
