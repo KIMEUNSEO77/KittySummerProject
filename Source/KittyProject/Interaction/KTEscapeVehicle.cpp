@@ -24,7 +24,8 @@
 // Sets default values
 AKTEscapeVehicle::AKTEscapeVehicle()
 {
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bStartWithTickEnabled = false;
 
 	SceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("SceneRoot"));
 	SetRootComponent(SceneRoot);
@@ -47,6 +48,11 @@ AKTEscapeVehicle::AKTEscapeVehicle()
 	
 	VehicleEntryPoint = CreateDefaultSubobject<USceneComponent>(TEXT("VehicleEntryPoint"));
 	VehicleEntryPoint->SetupAttachment(VehicleMesh);
+	
+	DriverDoorPivot = CreateDefaultSubobject<USceneComponent>(TEXT("DriverDoorPivot"));
+	DriverDoorPivot->SetupAttachment(VehicleMesh);
+	DriverDoorMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("DriverDoorMesh"));
+	DriverDoorMesh->SetupAttachment(DriverDoorPivot);
 }
 
 void AKTEscapeVehicle::Interact_Implementation(AActor* Interactor)
@@ -229,9 +235,25 @@ void AKTEscapeVehicle::HandleSequenceFinished()
 void AKTEscapeVehicle::HandleEnterVehicleNotify(FName NotifyName,
 	const FBranchingPointNotifyPayload& BranchingPointPayload)
 {
+	if (NotifyName == TEXT("OpenVehicleDoor"))
+	{
+		bIsDriverDoorOpening = true;
+		SetActorTickEnabled(true);
+		return;
+	}
+	
 	if (NotifyName != TEXT("EnterVehicle"))
 	{
 		return;
+	}
+	
+	// 엔딩 시네마틱 시작 전에 운전석 문을 닫힌 상태로 복구
+	if (IsValid(DriverDoorPivot))
+	{
+		bIsDriverDoorOpening = false;
+		SetActorTickEnabled(false);
+
+		DriverDoorPivot->SetRelativeRotation(DriverDoorClosedRotation);
 	}
 
 	if (!IsValid(EndingPlayerController) ||
@@ -287,8 +309,48 @@ void AKTEscapeVehicle::HandleEnterVehicleNotify(FName NotifyName,
 	SequencePlayer->Play();
 }
 
+void AKTEscapeVehicle::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+	
+	if (!bIsDriverDoorOpening || !IsValid(DriverDoorPivot))
+	{
+		return;
+	}
+
+	const FRotator TargetRotation = DriverDoorClosedRotation + FRotator(0.0f, DriverDoorOpenAngle, 0.0f);
+
+	const FRotator NewRotation =
+		FMath::RInterpConstantTo(
+			DriverDoorPivot->GetRelativeRotation(),
+			TargetRotation,
+			DeltaTime,
+			DriverDoorOpenSpeed
+		);
+
+	DriverDoorPivot->SetRelativeRotation(NewRotation);
+
+	if (NewRotation.Equals(TargetRotation, 0.5f))
+	{
+		DriverDoorPivot->SetRelativeRotation(TargetRotation);
+
+		bIsDriverDoorOpening = false;
+		SetActorTickEnabled(false);
+	}
+}
+
 void AKTEscapeVehicle::QuitGameAfterEnding()
 {
 	UKismetSystemLibrary::QuitGame(this, EndingPlayerController, EQuitPreference::Quit, false);
+}
+
+void AKTEscapeVehicle::BeginPlay()
+{
+	Super::BeginPlay();
+	
+	if (IsValid(DriverDoorPivot))
+	{
+		DriverDoorClosedRotation = DriverDoorPivot->GetRelativeRotation();
+	}
 }
 
