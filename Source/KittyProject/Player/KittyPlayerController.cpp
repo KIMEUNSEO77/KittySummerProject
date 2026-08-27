@@ -128,14 +128,6 @@ void AKittyPlayerController::HandleMissionNextStepQueued(
 			NextStep.Description
 		);
 	}
-	
-	if (MissionNotificationWidget)
-	{
-		MissionNotificationWidget->ShowNewMission(
-			MissionTitle,
-			NextStep.Description
-		);
-	}
 
 	// 기존 목표가 완료되었음을 HUD에 잠깐 표시합니다.
 	if (MissionTrackerWidget)
@@ -169,9 +161,18 @@ void AKittyPlayerController::HandleMissionStepChanged(
 
 	if (ObjectiveMarkerWidget && MissionSubsystem)
 	{
+		// 다음 목표는 저장하되
 		ObjectiveMarkerWidget->SetTargetActor(
 			MissionSubsystem->GetCurrentTargetActor()
 		);
+
+		// 시네마틱 중이면 화면에는 표시하지 않음
+		if (bIsGameplayUIHidden)
+		{
+			ObjectiveMarkerWidget->SetVisibility(
+				ESlateVisibility::Collapsed
+			);
+		}
 	}
 }
 
