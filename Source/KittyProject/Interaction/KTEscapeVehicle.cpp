@@ -42,6 +42,9 @@ AKTEscapeVehicle::AKTEscapeVehicle()
 
 	DriverSeatPoint = CreateDefaultSubobject<USceneComponent>(TEXT("DriverSeatPoint"));
 	DriverSeatPoint->SetupAttachment(VehicleMesh);
+	
+	VehicleEntryPoint = CreateDefaultSubobject<USceneComponent>(TEXT("VehicleEntryPoint"));
+	VehicleEntryPoint->SetupAttachment(VehicleMesh);
 }
 
 void AKTEscapeVehicle::Interact_Implementation(AActor* Interactor)

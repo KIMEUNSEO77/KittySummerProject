@@ -65,4 +65,12 @@ protected:
 	
 	// 엔딩 시네마틱 종료 후 게임 종료
 	void QuitGameAfterEnding();
+	
+	// 차량 탑승 애니메이션을 시작할 위치
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Vehicle|Components")
+	TObjectPtr<class USceneComponent> VehicleEntryPoint;
+
+	// 차량 탑승 애니메이션 몽타주
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Vehicle|Animation")
+	TObjectPtr<class UAnimMontage> EnterVehicleMontage;
 };
