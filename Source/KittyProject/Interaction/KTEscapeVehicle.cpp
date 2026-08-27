@@ -18,6 +18,8 @@
 #include "GameFramework/Character.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "TimerManager.h"
+#include "Animation/AnimInstance.h"
+#include "Animation/AnimMontage.h"
 
 // Sets default values
 AKTEscapeVehicle::AKTEscapeVehicle()
@@ -97,56 +99,92 @@ void AKTEscapeVehicle::Interact_Implementation(AActor* Interactor)
 
 	// 다시 상호작용하지 못하도록 Collision을 끔
 	InteractionCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-
-	// 플레이어를 운전석 위치에 부착
-	PlayerPawn->AttachToComponent(DriverSeatPoint, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
-
-	// 시네마틱에서 플레이어를 표시
-	PlayerPawn->SetActorHiddenInGame(false);
-
-	// 차량과 충돌해서 튕기지 않도록 플레이어 충돌을 끔
-	PlayerPawn->SetActorEnableCollision(false);
-
-	// 플레이어 캐릭터의 Skeletal Mesh를 가져옴
+	
 	ACharacter* PlayerCharacter = Cast<ACharacter>(PlayerPawn);
 
-	if (IsValid(PlayerCharacter) && DrivingAnimation)
+	if (!IsValid(PlayerCharacter) ||
+		!IsValid(EnterVehicleMontage) ||
+		!IsValid(VehicleEntryPoint))
 	{
-		USkeletalMeshComponent* PlayerMesh = PlayerCharacter->GetMesh();
-
-		if (IsValid(PlayerMesh))
-		{
-			// 기존 Anim Blueprint 대신 운전 애니메이션을 반복 재생
-			PlayerMesh->SetAnimationMode(EAnimationMode::AnimationSingleNode);
-
-			PlayerMesh->PlayAnimation(DrivingAnimation, true);
-		}
+		return;
 	}
-	
-	// 시네마틱 시작 전에 UMG UI 숨기기
-	AKittyPlayerController* KittyPlayerController = Cast<AKittyPlayerController>(PlayerController);
 
-	if (IsValid(KittyPlayerController))
+	USkeletalMeshComponent* PlayerMesh = PlayerCharacter->GetMesh();
+
+	if (!IsValid(PlayerMesh))
+	{
+		return;
+	}
+
+	UAnimInstance* AnimInstance = PlayerMesh->GetAnimInstance();
+
+	if (!IsValid(AnimInstance))
+	{
+		return;
+	}
+
+	// 엔딩 처리를 시작한 플레이어 컨트롤러 저장
+	EndingPlayerController = PlayerController;
+
+	bHasStartedEnding = true;
+
+	// 다시 상호작용하지 못하도록 충돌 끄기
+	InteractionCollision->SetCollisionEnabled(
+		ECollisionEnabled::NoCollision);
+
+	// 차량과 캐릭터가 충돌하지 않도록 설정
+	PlayerPawn->SetActorEnableCollision(false);
+
+	// 탑승 애니메이션 시작 위치로 이동
+	PlayerPawn->SetActorLocationAndRotation(
+		VehicleEntryPoint->GetComponentLocation(),
+		VehicleEntryPoint->GetComponentRotation()
+	);
+
+	// UI 숨기기
+	if (AKittyPlayerController* KittyPlayerController =
+		Cast<AKittyPlayerController>(PlayerController))
 	{
 		KittyPlayerController->SetGameplayUIVisible(false);
 	}
 
-	// 이동과 카메라 조작을 막고 시네마틱 모드로 전환
+	// 이동 및 카메라 조작 잠금
 	PlayerController->SetCinematicMode(
-		true,  // 시네마틱 모드
-		false, // 플레이어 숨기기: 위에서 직접 숨김
-		true,  // HUD 영향
-		true,  // 이동 제한
-		true   // 시점 회전 제한
+		true,
+		false,
+		true,
+		true,
+		true
 	);
 
-	// 같은 이벤트가 중복으로 연결되지 않도록 기존 연결 제거
-	SequencePlayer->OnFinished.RemoveDynamic(this, &AKTEscapeVehicle::HandleSequenceFinished);
+	AnimInstance->OnPlayMontageNotifyBegin.AddUniqueDynamic(this, &AKTEscapeVehicle::HandleEnterVehicleNotify);
+	
+	// 우선 탑승 몽타주만 재생
+	const float PlayedDuration = AnimInstance->Montage_Play(EnterVehicleMontage);
 
-	// 시네마틱이 끝나면 HandleSequenceFinished 호출
-	SequencePlayer->OnFinished.AddDynamic(this, &AKTEscapeVehicle::HandleSequenceFinished);
+	if (PlayedDuration <= 0.0f)
+	{
+		// 몽타주 재생 실패
+		bHasStartedEnding = false;
 
-	SequencePlayer->Play();
+		InteractionCollision->SetCollisionEnabled(
+			ECollisionEnabled::QueryOnly);
+
+		PlayerPawn->SetActorEnableCollision(true);
+
+		PlayerController->SetCinematicMode(
+			false,
+			false,
+			true,
+			true,
+			true);
+
+		if (AKittyPlayerController* KittyPlayerController =
+			Cast<AKittyPlayerController>(PlayerController))
+		{
+			KittyPlayerController->SetGameplayUIVisible(true);
+		}
+	}
 }
 
 FText AKTEscapeVehicle::GetInteractionText_Implementation() const
@@ -186,6 +224,67 @@ void AKTEscapeVehicle::HandleSequenceFinished()
 	FTimerHandle QuitTimerHandle;
 
 	GetWorldTimerManager().SetTimer(QuitTimerHandle, this, &AKTEscapeVehicle::QuitGameAfterEnding, 1.0f, false);
+}
+
+void AKTEscapeVehicle::HandleEnterVehicleNotify(FName NotifyName,
+	const FBranchingPointNotifyPayload& BranchingPointPayload)
+{
+	if (NotifyName != TEXT("EnterVehicle"))
+	{
+		return;
+	}
+
+	if (!IsValid(EndingPlayerController) ||
+		!IsValid(EscapeSequenceActor))
+	{
+		return;
+	}
+
+	ACharacter* PlayerCharacter = Cast<ACharacter>(EndingPlayerController->GetPawn());
+
+	if (!IsValid(PlayerCharacter) ||
+		!IsValid(DriverSeatPoint))
+	{
+		return;
+	}
+
+	USkeletalMeshComponent* PlayerMesh = PlayerCharacter->GetMesh();
+
+	if (!IsValid(PlayerMesh))
+	{
+		return;
+	}
+
+	UAnimInstance* AnimInstance = PlayerMesh->GetAnimInstance();
+
+	if (IsValid(AnimInstance))
+	{
+		// Notify가 두 번 처리되지 않도록 연결 해제
+		AnimInstance->OnPlayMontageNotifyBegin.RemoveDynamic(this, &AKTEscapeVehicle::HandleEnterVehicleNotify);
+	}
+
+	// 플레이어를 정확한 운전석 위치에 부착
+	PlayerCharacter->AttachToComponent(DriverSeatPoint, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+
+	// 몽타주 대신 운전 애니메이션 반복 재생
+	if (IsValid(DrivingAnimation))
+	{
+		PlayerMesh->SetAnimationMode(EAnimationMode::AnimationSingleNode);
+		PlayerMesh->PlayAnimation(DrivingAnimation, true);
+	}
+
+	ULevelSequencePlayer* SequencePlayer = EscapeSequenceActor->GetSequencePlayer();
+
+	if (!IsValid(SequencePlayer))
+	{
+		return;
+	}
+
+	SequencePlayer->OnFinished.RemoveDynamic(this, &AKTEscapeVehicle::HandleSequenceFinished);
+	SequencePlayer->OnFinished.AddDynamic(this, &AKTEscapeVehicle::HandleSequenceFinished);
+
+	// 기존 엔딩 시네마틱 시작
+	SequencePlayer->Play();
 }
 
 void AKTEscapeVehicle::QuitGameAfterEnding()

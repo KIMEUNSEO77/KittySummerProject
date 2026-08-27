@@ -8,6 +8,8 @@
 #include "GameplayTagContainer.h"
 #include "KTEscapeVehicle.generated.h"
 
+struct FBranchingPointNotifyPayload;
+
 UCLASS()
 class KITTYPROJECT_API AKTEscapeVehicle : public AActor,  public IKTInteractableInterface
 {
@@ -23,6 +25,10 @@ public:
 	// 시네마틱 재생이 끝났을 때 호출
 	UFUNCTION()
 	void HandleSequenceFinished();
+	
+	// 탑승 몽타주의 EnterVehicle Notify를 처리
+	UFUNCTION()
+	void HandleEnterVehicleNotify(FName NotifyName, const FBranchingPointNotifyPayload& BranchingPointPayload);
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Vehicle|Components")
