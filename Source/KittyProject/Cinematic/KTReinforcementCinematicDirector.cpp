@@ -129,7 +129,11 @@ void AKTReinforcementCinematicDirector::StartCinematic()
 
 		CineCamera->SetFieldOfView(52.0f);
 		CineCamera->SetConstraintAspectRatio(true);
-		CineCamera->SetAspectRatio(2.35f);
+		
+		FPlateCropSettings CropSettings;
+		CropSettings.AspectRatio = 2.39f;
+
+		CineCamera->SetCropSettings(CropSettings);
 	}
 
 	const int32 SafeGuardCount = FMath::Clamp(GuardCount, 10, 15);
