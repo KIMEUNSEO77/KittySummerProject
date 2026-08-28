@@ -7,6 +7,10 @@
 #include "Components/SpotLightComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "TimerManager.h"
+#include "DrawDebugHelpers.h"
+#include "Engine/Engine.h"
+#include "GameFramework/Character.h"
+#include "Kismet/GameplayStatics.h"
 
 // Sets default values
 AKTSecurityCamera::AKTSecurityCamera()
@@ -44,43 +48,44 @@ void AKTSecurityCamera::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	
-	if (!bIsRotating || !IsValid(CameraPivot))
+	// 카메라 회전 처리
+	if (bIsRotating && IsValid(CameraPivot))
 	{
-		return;
-	}
+		const float TargetYaw = bTargetingRight ? RightYaw : LeftYaw;
 
-	const float TargetYaw = bTargetingRight ? RightYaw : LeftYaw;
+		FRotator CurrentRotation = CameraPivot->GetRelativeRotation();
 
-	FRotator CurrentRotation = CameraPivot->GetRelativeRotation();
+		const float NewYaw =
+			FMath::FInterpConstantTo(
+				CurrentRotation.Yaw,
+				TargetYaw,
+				DeltaTime,
+				RotationSpeed
+			);
 
-	const float NewYaw =
-		FMath::FInterpConstantTo(
-			CurrentRotation.Yaw,
-			TargetYaw,
-			DeltaTime,
-			RotationSpeed
-		);
-
-	CurrentRotation.Yaw = NewYaw;
-	CameraPivot->SetRelativeRotation(CurrentRotation);
-
-	if (FMath::IsNearlyEqual(NewYaw, TargetYaw, 0.1f))
-	{
-		CurrentRotation.Yaw = TargetYaw;
+		CurrentRotation.Yaw = NewYaw;
 		CameraPivot->SetRelativeRotation(CurrentRotation);
 
-		bIsRotating = false;
-		bTargetingRight = !bTargetingRight;
+		if (FMath::IsNearlyEqual(NewYaw, TargetYaw, 0.1f))
+		{
+			CurrentRotation.Yaw = TargetYaw;
+			CameraPivot->SetRelativeRotation(CurrentRotation);
 
-		// 현재 방향에서 3초 대기
-		GetWorldTimerManager().SetTimer(
-			RotationWaitTimer,
-			this,
-			&AKTSecurityCamera::StartRotation,
-			WaitDuration,
-			false
-		);
+			bIsRotating = false;
+			bTargetingRight = !bTargetingRight;
+
+			GetWorldTimerManager().SetTimer(
+				RotationWaitTimer,
+				this,
+				&AKTSecurityCamera::StartRotation,
+				WaitDuration,
+				false
+			);
+		}
 	}
+
+	// 회전 여부와 상관없이 항상 감지
+	UpdatePlayerDetection(DeltaTime);
 }
 
 void AKTSecurityCamera::BeginPlay()
@@ -112,5 +117,168 @@ void AKTSecurityCamera::BeginPlay()
 void AKTSecurityCamera::StartRotation()
 {
 	bIsRotating = true;
+}
+
+void AKTSecurityCamera::UpdatePlayerDetection(float DeltaTime)
+{
+	ACharacter* PlayerCharacter = UGameplayStatics::GetPlayerCharacter(this, 0);
+
+	if (!IsValid(PlayerCharacter))
+	{
+		return;
+	}
+
+	FVector TraceStart;
+	FVector TraceEnd;
+
+	const bool bCanSeePlayer =
+		CanSeePlayer(
+			PlayerCharacter,
+			TraceStart,
+			TraceEnd
+		);
+
+	if (bCanSeePlayer)
+	{
+		// DetectionDuration초 동안 노출되면 1.0 도달
+		DetectionProgress += DeltaTime / FMath::Max(DetectionDuration, 0.01f);
+	}
+	else
+	{
+		DetectionProgress -= DeltaTime * DetectionDecreaseSpeed;
+	}
+
+	DetectionProgress =
+		FMath::Clamp(
+			DetectionProgress,
+			0.0f,
+			1.0f
+		);
+
+	if (bShowDetectionDebug)
+	{
+		// 감지되면 빨강, 엄폐되면 초록
+		DrawDebugLine(
+			GetWorld(),
+			TraceStart,
+			TraceEnd,
+			bCanSeePlayer
+				? FColor::Red
+				: FColor::Green,
+			false,
+			0.0f,
+			0,
+			2.0f
+		);
+
+		if (GEngine)
+		{
+			const FString DebugText =
+				FString::Printf(
+					TEXT("CCTV 감지 게이지: %.0f%%"),
+					DetectionProgress * 100.0f
+				);
+
+			// 같은 메시지를 갱신하여 화면 도배 방지
+			GEngine->AddOnScreenDebugMessage(
+				8721,
+				0.0f,
+				bCanSeePlayer
+					? FColor::Red
+					: FColor::Green,
+				DebugText
+			);
+		}
+	}
+
+	if (DetectionProgress >= 1.0f && !bAlarmTriggered)
+	{
+		TriggerAlarm();
+	}
+}
+
+bool AKTSecurityCamera::CanSeePlayer(class ACharacter* PlayerCharacter, FVector& OutTraceStart,
+                                     FVector& OutTraceEnd) const
+{
+	if (!IsValid(PlayerCharacter) ||
+		!IsValid(WarningLight))
+	{
+		return false;
+	}
+
+	OutTraceStart =
+		WarningLight->GetComponentLocation();
+
+	// 플레이어 몸통을 향하도록 높이 보정
+	OutTraceEnd =
+		PlayerCharacter->GetActorLocation() +
+		FVector(0.0f, 0.0f, 50.0f);
+
+	const FVector ToPlayer = OutTraceEnd - OutTraceStart;
+
+	const float DistanceToPlayer = ToPlayer.Size();
+
+	// 빨간 조명의 길이를 실제 감지 거리로 사용
+	const float DetectionDistance = WarningLight->AttenuationRadius;
+
+	if (DistanceToPlayer > DetectionDistance)
+	{
+		return false;
+	}
+
+	const FVector DirectionToPlayer = ToPlayer.GetSafeNormal();
+
+	const FVector CameraForward = WarningLight->GetForwardVector();
+
+	// Spotlight 바깥 각도를 실제 시야각으로 사용
+	const float MinimumViewDot =
+		FMath::Cos(
+			FMath::DegreesToRadians(
+				WarningLight->OuterConeAngle
+			)
+		);
+
+	const float ViewDot =
+		FVector::DotProduct(
+			CameraForward,
+			DirectionToPlayer
+		);
+
+	if (ViewDot < MinimumViewDot)
+	{
+		return false;
+	}
+
+	// 카메라 자신은 Line Trace에서 무시
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(this);
+
+	FHitResult HitResult;
+
+	const bool bHit =
+		GetWorld()->LineTraceSingleByChannel(
+			HitResult,
+			OutTraceStart,
+			OutTraceEnd,
+			ECC_Visibility,
+			QueryParams
+		);
+
+	return bHit && HitResult.GetActor() == PlayerCharacter;
+}
+
+void AKTSecurityCamera::TriggerAlarm()
+{
+	bAlarmTriggered = true;
+
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(
+			-1,
+			5.0f,
+			FColor::Red,
+			TEXT("경보 발생! CCTV에 발각되었습니다.")
+		);
+	}
 }
 
