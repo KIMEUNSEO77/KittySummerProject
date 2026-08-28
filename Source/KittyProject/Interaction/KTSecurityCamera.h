@@ -105,4 +105,8 @@ protected:
 	// 발각 시 재생하는 경보음
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera|Components")
 	TObjectPtr<class UAudioComponent> AlarmAudio;
+	
+	// CCTV 경보 발생 시 블루프린트에서 UI 연출을 실행
+	UFUNCTION(BlueprintImplementableEvent, Category = "Camera|Alarm")
+	void OnAlarmTriggered();
 };

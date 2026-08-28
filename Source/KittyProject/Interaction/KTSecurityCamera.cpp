@@ -287,6 +287,9 @@ void AKTSecurityCamera::TriggerAlarm()
 	{
 		AlarmAudio->Play();
 	}
+	
+	// 블루프린트에서 경보 UI 실행
+	OnAlarmTriggered();
 
 	if (GEngine)
 	{
