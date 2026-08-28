@@ -11,6 +11,7 @@
 #include "Engine/Engine.h"
 #include "GameFramework/Character.h"
 #include "Kismet/GameplayStatics.h"
+#include "Components/AudioComponent.h"
 
 // Sets default values
 AKTSecurityCamera::AKTSecurityCamera()
@@ -42,6 +43,12 @@ AKTSecurityCamera::AKTSecurityCamera()
 	WarningLight->SetOuterConeAngle(25.0f);
 	WarningLight->SetVolumetricScatteringIntensity(5.0f);
 	WarningLight->SetCastShadows(false);
+	
+	AlarmAudio = CreateDefaultSubobject<UAudioComponent>(TEXT("AlarmAudio"));
+	AlarmAudio->SetupAttachment(CameraPivot);
+
+	// 게임 시작과 동시에 재생되지 않도록 설정
+	AlarmAudio->SetAutoActivate(false);
 }
 
 void AKTSecurityCamera::Tick(float DeltaTime)
@@ -270,6 +277,16 @@ bool AKTSecurityCamera::CanSeePlayer(class ACharacter* PlayerCharacter, FVector&
 void AKTSecurityCamera::TriggerAlarm()
 {
 	bAlarmTriggered = true;
+	
+	// 카메라 회전 정지
+	bIsRotating = false;
+	GetWorldTimerManager().ClearTimer(RotationWaitTimer);
+
+	// 경보음 재생
+	if (IsValid(AlarmAudio) && !AlarmAudio->IsPlaying())
+	{
+		AlarmAudio->Play();
+	}
 
 	if (GEngine)
 	{

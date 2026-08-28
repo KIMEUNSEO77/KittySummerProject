@@ -101,4 +101,8 @@ protected:
 
 	// 감지 게이지가 최대가 됐을 때 호출
 	void TriggerAlarm();
+	
+	// 발각 시 재생하는 경보음
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera|Components")
+	TObjectPtr<class UAudioComponent> AlarmAudio;
 };
