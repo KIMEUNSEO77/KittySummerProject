@@ -17,6 +17,7 @@ public:
 	
 	virtual void Tick(float DeltaTime) override;
 
+// Rotation Section
 protected:
 	virtual void BeginPlay() override;
 
@@ -66,4 +67,42 @@ protected:
 	bool bTargetingRight = true;
 
 	FTimerHandle RotationWaitTimer;
+	
+	// Detection Section
+protected:
+	// 플레이어가 완전히 감지되는 데 필요한 시간
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera|Detection")
+	float DetectionDuration = 2.0f;
+
+	// 플레이어를 놓쳤을 때 감지 게이지가 감소하는 속도
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera|Detection")
+	float DetectionDecreaseSpeed = 0.75f;
+
+	// 현재 감지 게이지: 0.0 ~ 1.0
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera|Detection")
+	float DetectionProgress = 0.0f;
+
+	// 디버그 선과 메시지를 표시할지
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera|Debug")
+	bool bShowDetectionDebug = true;
+
+	// 이미 완전히 발각됐는지
+	bool bAlarmTriggered = false;
+
+	// 거리·시야각·엄폐물을 확인하여 플레이어 감지
+	void UpdatePlayerDetection(float DeltaTime);
+
+	// 플레이어가 실제로 보이는지 확인
+	bool CanSeePlayer(
+		class ACharacter* PlayerCharacter,
+		FVector& OutTraceStart,
+		FVector& OutTraceEnd
+	) const;
+
+	// 감지 게이지가 최대가 됐을 때 호출
+	void TriggerAlarm();
+	
+	// 발각 시 재생하는 경보음
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera|Components")
+	TObjectPtr<class UAudioComponent> AlarmAudio;
 };
