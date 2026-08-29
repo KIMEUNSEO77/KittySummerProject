@@ -166,20 +166,6 @@ void AKTSecurityCamera::UpdatePlayerDetection(float DeltaTime)
 
 	if (bShowDetectionDebug)
 	{
-		// 감지되면 빨강, 엄폐되면 초록
-		DrawDebugLine(
-			GetWorld(),
-			TraceStart,
-			TraceEnd,
-			bCanSeePlayer
-				? FColor::Red
-				: FColor::Green,
-			false,
-			0.0f,
-			0,
-			2.0f
-		);
-
 		if (GEngine)
 		{
 			const FString DebugText =
