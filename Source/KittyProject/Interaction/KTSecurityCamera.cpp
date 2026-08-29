@@ -12,6 +12,8 @@
 #include "GameFramework/Character.h"
 #include "Kismet/GameplayStatics.h"
 #include "Components/AudioComponent.h"
+#include "Mission/KTMissionSubsystem.h"
+#include "GameplayTagContainer.h"
 
 // Sets default values
 AKTSecurityCamera::AKTSecurityCamera()
@@ -290,6 +292,17 @@ void AKTSecurityCamera::TriggerAlarm()
 	
 	// 블루프린트에서 경보 UI 실행
 	OnAlarmTriggered();
+	
+	// CCTV 발각 이벤트 전송
+	if (UKTMissionSubsystem* MissionSubsystem = UKTMissionSubsystem::Get(this))
+	{
+		const FGameplayTag CCTVDetectedTag = FGameplayTag::RequestGameplayTag(TEXT("Gameplay.Event.Security.CCTVDetected"), false);
+
+		if (CCTVDetectedTag.IsValid())
+		{
+			MissionSubsystem->BroadcastMissionEvent(CCTVDetectedTag, this);
+		}
+	}
 
 	if (GEngine)
 	{
