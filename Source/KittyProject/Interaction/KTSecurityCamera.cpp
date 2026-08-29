@@ -12,6 +12,8 @@
 #include "GameFramework/Character.h"
 #include "Kismet/GameplayStatics.h"
 #include "Components/AudioComponent.h"
+#include "Mission/KTMissionSubsystem.h"
+#include "GameplayTagContainer.h"
 
 // Sets default values
 AKTSecurityCamera::AKTSecurityCamera()
@@ -164,20 +166,6 @@ void AKTSecurityCamera::UpdatePlayerDetection(float DeltaTime)
 
 	if (bShowDetectionDebug)
 	{
-		// 감지되면 빨강, 엄폐되면 초록
-		DrawDebugLine(
-			GetWorld(),
-			TraceStart,
-			TraceEnd,
-			bCanSeePlayer
-				? FColor::Red
-				: FColor::Green,
-			false,
-			0.0f,
-			0,
-			2.0f
-		);
-
 		if (GEngine)
 		{
 			const FString DebugText =
@@ -290,6 +278,17 @@ void AKTSecurityCamera::TriggerAlarm()
 	
 	// 블루프린트에서 경보 UI 실행
 	OnAlarmTriggered();
+	
+	// CCTV 발각 이벤트 전송
+	if (UKTMissionSubsystem* MissionSubsystem = UKTMissionSubsystem::Get(this))
+	{
+		const FGameplayTag CCTVDetectedTag = FGameplayTag::RequestGameplayTag(TEXT("Gameplay.Event.Security.CCTVDetected"), false);
+
+		if (CCTVDetectedTag.IsValid())
+		{
+			MissionSubsystem->BroadcastMissionEvent(CCTVDetectedTag, this);
+		}
+	}
 
 	if (GEngine)
 	{
@@ -300,5 +299,20 @@ void AKTSecurityCamera::TriggerAlarm()
 			TEXT("경보 발생! CCTV에 발각되었습니다.")
 		);
 	}
+}
+
+void AKTSecurityCamera::ClearAlarm()
+{
+	// 경보음 정지
+	if (IsValid(AlarmAudio) && AlarmAudio->IsPlaying())
+	{
+		AlarmAudio->Stop();
+	}
+
+	// 감지 게이지 초기화
+	DetectionProgress = 0.0f;
+
+	// 블루프린트에 UI 종료 요청
+	OnAlarmCleared();
 }
 

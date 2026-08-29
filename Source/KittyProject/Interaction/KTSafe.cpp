@@ -199,16 +199,6 @@ bool AKTSafe::TryUnlock(const FString& EnteredPassword)
 	SetActorTickEnabled(true);
 	CloseKeypad();
 
-	if (GEngine)
-	{
-		GEngine->AddOnScreenDebugMessage(
-			-1,
-			3.0f,
-			FColor::Green,
-			TEXT("비밀번호가 일치합니다. 금고가 열립니다.")
-		);
-	}
-
 	return true;
 }
 

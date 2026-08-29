@@ -109,4 +109,15 @@ protected:
 	// CCTV 경보 발생 시 블루프린트에서 UI 연출을 실행
 	UFUNCTION(BlueprintImplementableEvent, Category = "Camera|Alarm")
 	void OnAlarmTriggered();
+	
+	// Guard Section
+public:
+	// 경비원들이 모두 사망했을 때 경보 종료
+	UFUNCTION(BlueprintCallable, Category = "Camera|Alarm")
+	void ClearAlarm();
+	
+protected:
+	// 경보 종료 시 블루프린트에서 UI를 끄기 위한 이벤트
+	UFUNCTION(BlueprintImplementableEvent, Category = "Camera|Alarm")
+	void OnAlarmCleared();
 };
