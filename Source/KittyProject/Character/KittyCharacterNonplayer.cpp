@@ -220,6 +220,8 @@ void AKittyCharacterNonplayer::Die(UAnimMontage* DeathMontage)
 	}
 	
 	bIsDead = true;
+	// 증원 매니저에 사망 사실 전달
+	OnGuardDied.Broadcast();
 	SetCanBeDamaged(false);
 	if (IsValid(CarriedItem))
 	{

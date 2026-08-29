@@ -315,3 +315,18 @@ void AKTSecurityCamera::TriggerAlarm()
 	}
 }
 
+void AKTSecurityCamera::ClearAlarm()
+{
+	// 경보음 정지
+	if (IsValid(AlarmAudio) && AlarmAudio->IsPlaying())
+	{
+		AlarmAudio->Stop();
+	}
+
+	// 감지 게이지 초기화
+	DetectionProgress = 0.0f;
+
+	// 블루프린트에 UI 종료 요청
+	OnAlarmCleared();
+}
+

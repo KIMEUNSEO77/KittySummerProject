@@ -35,6 +35,9 @@ enum class EGuardWeaponType : uint8
 	Gun UMETA(DisplayName = "Gun")
 };
 
+// 경비원이 사망했을 때 알리는 이벤트
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnGuardDiedSignature);
+
 UCLASS()
 class KITTYPROJECT_API AKittyCharacterNonplayer : public AKittyCharacterBase, public IKittyCharacterAIInterface
 {
@@ -160,4 +163,10 @@ public:
 	
 	UFUNCTION(BlueprintImplementableEvent, Category = "AI|Weapon")
 	void OnGuardWeaponTypeChanged(EGuardWeaponType NewType);
+	
+	// CCTV Section
+public:
+	// 경비원 사망 이벤트
+	UPROPERTY(BlueprintAssignable, Category = "Guard|Death")
+	FOnGuardDiedSignature OnGuardDied;
 };
