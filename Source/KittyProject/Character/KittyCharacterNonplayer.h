@@ -13,6 +13,7 @@
  */
 
 class UAnimMontage;
+class USceneComponent;
 class ATargetPoint;
 class UKTBatonAttackComponent;
 class UKTGunAttackComponent;
@@ -176,12 +177,20 @@ public:
 	bool BeginAssassination();
 	void CompleteAssassination();
 	void CancelAssassination();
+	FTransform GetAssassinationAnchorTransform() const;
 	
 private:
+	// 플레이어가 암살을 시작할 때 도착해야 하는 경비원 기준 위치
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Assassination", meta=(AllowPrivateAccess="true"))
+	TObjectPtr<USceneComponent> AssassinationAnchor;
+
 	UPROPERTY(EditDefaultsOnly, Category="Assassination|Animation")
 	TObjectPtr<UAnimMontage> AssassinatedMontage;
 	
 	bool bIsBeingAssassinated = false;
 	
 	ECollisionResponse PreviousPawnCollisionResponse;
+
+	uint8 PreviousMovementMode = 0;
+	uint8 PreviousCustomMovementMode = 0;
 };

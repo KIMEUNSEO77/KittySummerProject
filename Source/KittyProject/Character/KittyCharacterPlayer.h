@@ -303,9 +303,6 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category="Assassination")
 	float AssassinateRearDotThreshold = -0.5f;
 	
-	UPROPERTY(EditDefaultsOnly, Category="Assassination")
-	float AssassinationStandOff = 90.0f;
-	
 	UPROPERTY(EditDefaultsOnly, Category="Assassination|Animation")
 	TObjectPtr<UAnimMontage> AssassinationMontage;
 	

@@ -6,6 +6,7 @@
 #include "AI/Attack/KTGunAttackComponent.h"
 #include "Animation/AnimMontage.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/SceneComponent.h"
 #include "Engine/TargetPoint.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "UObject/ConstructorHelpers.h"
@@ -18,6 +19,10 @@ AKittyCharacterNonplayer::AKittyCharacterNonplayer()
 	
 	AIControllerClass = AKittyAIController::StaticClass();
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
+
+	AssassinationAnchor = CreateDefaultSubobject<USceneComponent>(TEXT("AssassinationAnchor"));
+	AssassinationAnchor->SetupAttachment(GetRootComponent());
+	AssassinationAnchor->SetRelativeLocation(FVector(-90.0f, 0.0f, 0.0f));
 	
 	static ConstructorHelpers::FObjectFinder<UAnimMontage>FrontDeathMontageRef(TEXT("/Game/Animations/GuardAnimation/AM_FrontDeath1.AM_FrontDeath1"));
 
@@ -179,7 +184,11 @@ bool AKittyCharacterNonplayer::BeginAssassination()
 		AIController->StopAI();
 	}
 	
-	GetCharacterMovement()->StopMovementImmediately();
+	UCharacterMovementComponent* MovementComponent = GetCharacterMovement();
+	PreviousMovementMode = static_cast<uint8>(MovementComponent->MovementMode);
+	PreviousCustomMovementMode = MovementComponent->CustomMovementMode;
+	MovementComponent->StopMovementImmediately();
+	MovementComponent->DisableMovement();
 	
 	PreviousPawnCollisionResponse = GetCapsuleComponent()->GetCollisionResponseToChannel(ECC_Pawn);
 	
@@ -220,10 +229,22 @@ void AKittyCharacterNonplayer::CancelAssassination()
 
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Pawn,PreviousPawnCollisionResponse);
 
+	GetCharacterMovement()->SetMovementMode(
+		static_cast<EMovementMode>(PreviousMovementMode),
+		PreviousCustomMovementMode
+	);
+
 	if (AKittyAIController* AIController = Cast<AKittyAIController>(GetController()))
 	{
 		AIController->RunAI();
 	}
+}
+
+FTransform AKittyCharacterNonplayer::GetAssassinationAnchorTransform() const
+{
+	return IsValid(AssassinationAnchor)
+		? AssassinationAnchor->GetComponentTransform()
+		: GetActorTransform();
 }
 
 float AKittyCharacterNonplayer::GetAITurnSpeed()

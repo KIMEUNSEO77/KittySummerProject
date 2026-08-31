@@ -2,7 +2,6 @@
 
 #include "Character/KittyCharacterPlayer.h"
 
-#include "AI/KittyAIController.h"
 #include "Camera/CameraComponent.h"
 #include "Animation/AnimInstance.h"
 #include "Animation/AnimSequence.h"
@@ -170,57 +169,6 @@ void AKittyCharacterPlayer::BeginPlay()
 	Super::BeginPlay();
 	
 	SetCharacterControl(CurrentCharacterControlType);
-
-#if WITH_EDITOR
-	// 암살 정렬을 반복 검증하기 위한 PIE 전용 임시 배치입니다.
-	if (GetWorld() && GetWorld()->WorldType == EWorldType::PIE)
-	{
-		GetWorldTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
-		{
-			TArray<AActor*> Guards;
-			UGameplayStatics::GetAllActorsOfClass(GetWorld(), AKittyCharacterNonplayer::StaticClass(), Guards);
-
-			AKittyCharacterNonplayer* ClosestGuard = nullptr;
-			float ClosestDistanceSquared = TNumericLimits<float>::Max();
-
-			for (AActor* GuardActor : Guards)
-			{
-				AKittyCharacterNonplayer* Guard = Cast<AKittyCharacterNonplayer>(GuardActor);
-				if (!IsValid(Guard) || Guard->IsDead())
-				{
-					continue;
-				}
-
-				const float DistanceSquared = FVector::DistSquared(GetActorLocation(), Guard->GetActorLocation());
-				if (DistanceSquared < ClosestDistanceSquared)
-				{
-					ClosestDistanceSquared = DistanceSquared;
-					ClosestGuard = Guard;
-				}
-			}
-
-			if (!IsValid(ClosestGuard))
-			{
-				return;
-			}
-
-			const FVector TestLocation = GetActorLocation() + GetActorForwardVector() * 130.0f;
-			ClosestGuard->SetActorLocationAndRotation(
-				TestLocation,
-				GetActorRotation(),
-				false,
-				nullptr,
-				ETeleportType::TeleportPhysics
-			);
-
-			if (AKittyAIController* AIController = Cast<AKittyAIController>(ClosestGuard->GetController()))
-			{
-				AIController->StopMovement();
-				AIController->StopAI();
-			}
-		}));
-	}
-#endif
 }
 
 void AKittyCharacterPlayer::Tick(float DeltaTime)
@@ -1178,6 +1126,8 @@ bool AKittyCharacterPlayer::TryAssassinate()
 	{
 		return false;
 	}
+
+	const FTransform OriginalPlayerTransform = GetActorTransform();
 	
 	if (!Target->BeginAssassination())
 	{
@@ -1198,11 +1148,28 @@ bool AKittyCharacterPlayer::TryAssassinate()
 	StopAiming();
 	BeginInteractionLock();
 	
-	// NPC 뒤쪽의 플레이어 도착 지점
-	const FVector WarpLocation = Target->GetActorLocation() - Target->GetActorForwardVector() * AssassinationStandOff;
+	// 암살 애니메이션에 Root Motion이 없어도 두 캐릭터가 반드시 같은 기준점에서
+	// 시작하도록 플레이어를 경비원의 암살 앵커로 먼저 강제 이동시킨다.
+	const FTransform WarpTransform = Target->GetAssassinationAnchorTransform();
+	GetCharacterMovement()->StopMovementImmediately();
+
+	const bool bMovedToAnchor = SetActorLocationAndRotation(
+		WarpTransform.GetLocation(),
+		WarpTransform.Rotator(),
+		false,
+		nullptr,
+		ETeleportType::TeleportPhysics
+	);
+
+	if (!bMovedToAnchor)
+	{
+		Target->CancelAssassination();
+		AssassinationTarget = nullptr;
+		EndInteractionLock();
+		return false;
+	}
 	
-	const FTransform WarpTransform(Target->GetActorRotation(), WarpLocation);
-	
+	// Root Motion이 있는 애니메이션에서는 남은 위치 오차까지 같은 앵커로 보정한다.
 	MotionWarpingComponent->AddOrUpdateWarpTargetFromTransform(TEXT("AssassinationTarget"), WarpTransform);
 	
 	AnimInstance->OnPlayMontageNotifyBegin.AddUniqueDynamic(this, &AKittyCharacterPlayer::HandleInteractionNotify);
@@ -1215,6 +1182,7 @@ bool AKittyCharacterPlayer::TryAssassinate()
 	{
 		Target->CancelAssassination();
 		AssassinationTarget = nullptr;
+		SetActorTransform(OriginalPlayerTransform, false, nullptr, ETeleportType::TeleportPhysics);
 
 		MotionWarpingComponent->RemoveWarpTarget(TEXT("AssassinationTarget"));
 
