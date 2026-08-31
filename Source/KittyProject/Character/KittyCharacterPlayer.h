@@ -8,6 +8,8 @@
 #include "Animation/AnimInstance.h"
 #include "KittyCharacterPlayer.generated.h"
 
+class AKittyCharacterNonplayer;
+
 /**
  * 
  */
@@ -288,4 +290,27 @@ protected:
 	// 애니메이션이 끝날 때까지 기억할 통신 단말기
 	UPROPERTY()
 	TObjectPtr<class AKTCommunicationTerminal> PendingTerminal;
+	
+public:
+	//암살 애니메이션
+	bool TryAssassinate();
+	
+	AKittyCharacterNonplayer* FindAssassinationTarget() const;
+	
+	UPROPERTY(EditDefaultsOnly, Category="Assassination")
+	float AssassinateRange = 180.0f;
+	
+	UPROPERTY(EditDefaultsOnly, Category="Assassination")
+	float AssassinateRearDotThreshold = -0.5f;
+	
+	UPROPERTY(EditDefaultsOnly, Category="Assassination")
+	float AssassinationStandOff = 90.0f;
+	
+	UPROPERTY(EditDefaultsOnly, Category="Assassination|Animation")
+	TObjectPtr<UAnimMontage> AssassinationMontage;
+	
+	UPROPERTY()
+	TObjectPtr<AKittyCharacterNonplayer> AssassinationTarget;
+	
+	bool bAssassinationCommitted = false;
 };
