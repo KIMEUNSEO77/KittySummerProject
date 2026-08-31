@@ -6,6 +6,7 @@
 #include "AI/Attack/KTGunAttackComponent.h"
 #include "Animation/AnimMontage.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/SceneComponent.h"
 #include "Engine/TargetPoint.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "UObject/ConstructorHelpers.h"
@@ -18,6 +19,10 @@ AKittyCharacterNonplayer::AKittyCharacterNonplayer()
 	
 	AIControllerClass = AKittyAIController::StaticClass();
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
+
+	AssassinationAnchor = CreateDefaultSubobject<USceneComponent>(TEXT("AssassinationAnchor"));
+	AssassinationAnchor->SetupAttachment(GetRootComponent());
+	AssassinationAnchor->SetRelativeLocation(FVector(-90.0f, 0.0f, 0.0f));
 	
 	static ConstructorHelpers::FObjectFinder<UAnimMontage>FrontDeathMontageRef(TEXT("/Game/Animations/GuardAnimation/AM_FrontDeath1.AM_FrontDeath1"));
 
@@ -45,6 +50,15 @@ AKittyCharacterNonplayer::AKittyCharacterNonplayer()
 	if (RightDeathMontageRef.Succeeded())
 	{
 		RightDeathMontage = RightDeathMontageRef.Object;
+	}
+
+	static ConstructorHelpers::FObjectFinder<UAnimMontage> AssassinatedMontageRef(
+		TEXT("/Game/Animations/Assassination/Assassinated.Assassinated")
+	);
+
+	if (AssassinatedMontageRef.Succeeded())
+	{
+		AssassinatedMontage = AssassinatedMontageRef.Object;
 	}
 	
 	BatonAttackComponent = CreateDefaultSubobject<UKTBatonAttackComponent>(TEXT("BatonAttackComponent"));
@@ -150,6 +164,87 @@ void AKittyCharacterNonplayer::SetGuardWeaponType(EGuardWeaponType NewType)
 	GunAttackComponent->SetActive(NewType == EGuardWeaponType::Gun);
 	
 	OnGuardWeaponTypeChanged(NewType);
+}
+
+bool AKittyCharacterNonplayer::BeginAssassination()
+{
+	if (bIsDead ||
+	bIsBeingAssassinated ||
+	!IsValid(AssassinatedMontage))
+	{
+		return false;
+	}
+	
+	bIsBeingAssassinated = true;
+	
+	if (AKittyAIController* AIController = Cast<AKittyAIController>(GetController()))
+	{
+		AIController->StopMovement();
+		AIController->ClearFocus(EAIFocusPriority::Gameplay);
+		AIController->StopAI();
+	}
+	
+	UCharacterMovementComponent* MovementComponent = GetCharacterMovement();
+	PreviousMovementMode = static_cast<uint8>(MovementComponent->MovementMode);
+	PreviousCustomMovementMode = MovementComponent->CustomMovementMode;
+	MovementComponent->StopMovementImmediately();
+	MovementComponent->DisableMovement();
+	
+	PreviousPawnCollisionResponse = GetCapsuleComponent()->GetCollisionResponseToChannel(ECC_Pawn);
+	
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
+	
+	const float Duration = PlayAnimMontage(AssassinatedMontage);
+	
+	if (Duration <= 0.0f)
+	{
+		CancelAssassination();
+		return false;
+	}
+	
+	return true;
+}
+
+void AKittyCharacterNonplayer::CompleteAssassination()
+{
+	if (!bIsBeingAssassinated||bIsDead)
+	{
+		return;
+	}
+	
+	bIsBeingAssassinated = false;
+	
+	Die(nullptr);
+}
+
+void AKittyCharacterNonplayer::CancelAssassination()
+{
+	if (!bIsBeingAssassinated || bIsDead)
+	{
+		return;
+	}
+
+	bIsBeingAssassinated = false;
+	StopAnimMontage(AssassinatedMontage);
+
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Pawn,PreviousPawnCollisionResponse);
+
+	GetCharacterMovement()->SetMovementMode(
+		static_cast<EMovementMode>(PreviousMovementMode),
+		PreviousCustomMovementMode
+	);
+
+	if (AKittyAIController* AIController = Cast<AKittyAIController>(GetController()))
+	{
+		AIController->RunAI();
+	}
+}
+
+FTransform AKittyCharacterNonplayer::GetAssassinationAnchorTransform() const
+{
+	return IsValid(AssassinationAnchor)
+		? AssassinationAnchor->GetComponentTransform()
+		: GetActorTransform();
 }
 
 float AKittyCharacterNonplayer::GetAITurnSpeed()

@@ -22,6 +22,7 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "TimerManager.h"
 #include "DrawDebugHelpers.h"
+#include "KittyCharacterNonplayer.h"
 #include "Item/KTPistolPickup.h"
 #include "Inventory/KTInventoryComponent.h"
 #include "Player/KittyPlayerController.h"
@@ -143,6 +144,15 @@ AKittyCharacterPlayer::AKittyCharacterPlayer()
 	if (CrouchedToStandingAnimationRef.Succeeded())
 	{
 		CrouchedToStandingAnimation = CrouchedToStandingAnimationRef.Object;
+	}
+
+	static ConstructorHelpers::FObjectFinder<UAnimMontage> AssassinationMontageRef(
+		TEXT("/Game/Animations/Assassination/Assassination.Assassination")
+	);
+
+	if (AssassinationMontageRef.Succeeded())
+	{
+		AssassinationMontage = AssassinationMontageRef.Object;
 	}
 	
 	MotionWarpingComponent = CreateDefaultSubobject<UMotionWarpingComponent>(TEXT("MotionWarpingComponent"));
@@ -441,6 +451,11 @@ void AKittyCharacterPlayer::CheckForInteractable()
 
 void AKittyCharacterPlayer::Interact()
 {
+	if (TryAssassinate())
+	{
+		return;
+	}
+	
 	// 현재 상호작용 대상이 없으면 아무것도 하지 않음
 	if (!IsValid(CurrentInteractable))
 	{
@@ -917,16 +932,21 @@ void AKittyCharacterPlayer::StartTerminalInteraction(class AKTCommunicationTermi
 	}
 }
 
-void AKittyCharacterPlayer::BeginInteractionLock()
+void AKittyCharacterPlayer::BeginInteractionLock(bool bLockCamera)
 {
 	bIsPerformingInteraction = true;
+	bInteractionLocksCamera = bLockCamera;
 
 	GetCharacterMovement()->StopMovementImmediately();
 
 	if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
 	{
 		PlayerController->SetIgnoreMoveInput(true);
-		PlayerController->SetIgnoreLookInput(true);
+
+		if (bInteractionLocksCamera)
+		{
+			PlayerController->SetIgnoreLookInput(true);
+		}
 	}
 }
 
@@ -937,8 +957,14 @@ void AKittyCharacterPlayer::EndInteractionLock()
 	if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
 	{
 		PlayerController->SetIgnoreMoveInput(false);
-		PlayerController->SetIgnoreLookInput(false);
+
+		if (bInteractionLocksCamera)
+		{
+			PlayerController->SetIgnoreLookInput(false);
+		}
 	}
+
+	bInteractionLocksCamera = false;
 }
 
 void AKittyCharacterPlayer::HandleInteractionNotify(FName NotifyName, const FBranchingPointNotifyPayload& BranchingPointPayload)
@@ -1028,6 +1054,18 @@ void AKittyCharacterPlayer::HandleInteractionNotify(FName NotifyName, const FBra
 
 		return;
 	}
+	
+	//암살
+	if (NotifyName == TEXT("AssassinationHit"))
+	{
+		if (IsValid(AssassinationTarget))
+		{
+			AssassinationTarget->CompleteAssassination();
+			bAssassinationCommitted = true;
+		}
+
+		return;
+	}
 }
 
 void AKittyCharacterPlayer::HandleInteractionMontageEnded(UAnimMontage* Montage, bool bInterrupted)
@@ -1036,8 +1074,9 @@ void AKittyCharacterPlayer::HandleInteractionMontageEnded(UAnimMontage* Montage,
 	const bool bItemMontageEnded = Montage == ActiveItemPickupMontage;
 	const bool bKeycardMontageEnded = Montage == KeycardUseMontage;
 	const bool bTerminalMontageEnded = Montage == TerminalInteractionMontage;
+	const bool bAssassinationMontageEnded = Montage == AssassinationMontage;
 
-	if (!bPistolMontageEnded && !bItemMontageEnded && !bKeycardMontageEnded && !bTerminalMontageEnded)
+	if (!bPistolMontageEnded && !bItemMontageEnded && !bKeycardMontageEnded && !bTerminalMontageEnded && !bAssassinationMontageEnded)
 	{
 		return;
 	}
@@ -1056,7 +1095,24 @@ void AKittyCharacterPlayer::HandleInteractionMontageEnded(UAnimMontage* Montage,
 	{
 		PendingTerminal->CompleteTerminalInteraction(this);
 	}
+	
+	if (bAssassinationMontageEnded)
+	{
+		if (IsValid(MotionWarpingComponent))
+		{
+			MotionWarpingComponent->RemoveWarpTarget(TEXT("AssassinationTarget"));
+		}
 
+		// 실제 암살 타격 전에 몽타주가 중단된 경우
+		if (bInterrupted &&!bAssassinationCommitted && IsValid(AssassinationTarget))
+		{
+			AssassinationTarget->CancelAssassination();
+		}
+
+		AssassinationTarget = nullptr;
+		bAssassinationCommitted = false;
+	}
+	
 	PendingPistolPickup = nullptr;
 	PendingItemPickup = nullptr;
 	ActiveItemPickupMontage = nullptr;
@@ -1064,4 +1120,165 @@ void AKittyCharacterPlayer::HandleInteractionMontageEnded(UAnimMontage* Montage,
 	PendingTerminal = nullptr;
 
 	EndInteractionLock();
+}
+
+bool AKittyCharacterPlayer::TryAssassinate()
+{
+	if (bIsPerformingInteraction ||
+		!IsValid(AssassinationMontage) ||
+		!IsValid(MotionWarpingComponent))
+	{
+		return false;
+	}
+	
+	AKittyCharacterNonplayer* Target = FindAssassinationTarget();
+	
+	if (!IsValid(Target))
+	{
+		return false;
+	}
+
+	const FTransform OriginalPlayerTransform = GetActorTransform();
+	
+	if (!Target->BeginAssassination())
+	{
+		return false;
+	}
+	
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	
+	if (!IsValid(AnimInstance))
+	{
+		Target->CancelAssassination();
+		return false;
+	}
+	
+	AssassinationTarget = Target;
+	bAssassinationCommitted = false;
+	
+	StopAiming();
+	// 암살 중에는 이동만 잠그고 카메라 회전 입력은 허용한다.
+	BeginInteractionLock(false);
+	
+	// 암살 애니메이션에 Root Motion이 없어도 두 캐릭터가 반드시 같은 기준점에서
+	// 시작하도록 플레이어를 경비원의 암살 앵커로 먼저 강제 이동시킨다.
+	const FTransform WarpTransform = Target->GetAssassinationAnchorTransform();
+	GetCharacterMovement()->StopMovementImmediately();
+
+	const bool bMovedToAnchor = SetActorLocationAndRotation(
+		WarpTransform.GetLocation(),
+		WarpTransform.Rotator(),
+		false,
+		nullptr,
+		ETeleportType::TeleportPhysics
+	);
+
+	if (!bMovedToAnchor)
+	{
+		Target->CancelAssassination();
+		AssassinationTarget = nullptr;
+		EndInteractionLock();
+		return false;
+	}
+	
+	// Root Motion이 있는 애니메이션에서는 남은 위치 오차까지 같은 앵커로 보정한다.
+	MotionWarpingComponent->AddOrUpdateWarpTargetFromTransform(TEXT("AssassinationTarget"), WarpTransform);
+	
+	AnimInstance->OnPlayMontageNotifyBegin.AddUniqueDynamic(this, &AKittyCharacterPlayer::HandleInteractionNotify);
+	
+	AnimInstance->OnMontageEnded.AddUniqueDynamic(this, &AKittyCharacterPlayer::HandleInteractionMontageEnded);
+	
+	const float Duration = AnimInstance->Montage_Play(AssassinationMontage);
+	
+	if (Duration <= 0.0f)
+	{
+		Target->CancelAssassination();
+		AssassinationTarget = nullptr;
+		SetActorTransform(OriginalPlayerTransform, false, nullptr, ETeleportType::TeleportPhysics);
+
+		MotionWarpingComponent->RemoveWarpTarget(TEXT("AssassinationTarget"));
+
+		EndInteractionLock();
+		return false;
+	}
+
+	return true;
+}
+
+AKittyCharacterNonplayer* AKittyCharacterPlayer::FindAssassinationTarget() const
+{
+	TArray<FOverlapResult> Results;
+	
+	FCollisionObjectQueryParams ObjectParams;
+	ObjectParams.AddObjectTypesToQuery(ECC_Pawn);
+	
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(this);
+	
+	const bool bFound = GetWorld()->OverlapMultiByObjectType(
+		Results, 
+		GetActorLocation(), 
+		FQuat::Identity, 
+		ObjectParams, 
+		FCollisionShape::MakeSphere(AssassinateRange),
+		QueryParams);
+	
+	if (!bFound)
+	{
+		return nullptr;
+	}
+	
+	AKittyCharacterNonplayer* BestTarget = nullptr;
+	float BestDistanceSq = TNumericLimits<float>::Max();
+	
+	for (const FOverlapResult& result : Results)
+	{
+		AKittyCharacterNonplayer* NPC = Cast<AKittyCharacterNonplayer>(result.GetActor());
+		
+		if (!IsValid(NPC)||NPC->IsDead())
+		{
+			continue;
+		}
+		
+		FVector NpcToPlayer = GetActorLocation() - NPC->GetActorLocation();
+		
+		if (FMath::Abs(NpcToPlayer.Z)>100.0f)
+		{
+			continue;
+		}
+		NpcToPlayer.Z = 0.0f;
+		
+		const float DistanceSq = NpcToPlayer.SizeSquared();
+		
+		if (DistanceSq > FMath::Square(AssassinateRange))
+		{
+			continue;
+		}
+		
+		const FVector NpcToPlayerDirection = NpcToPlayer.GetSafeNormal();
+		
+		const float RearDot = FVector::DotProduct(NPC->GetActorForwardVector().GetSafeNormal2D(), NpcToPlayerDirection);
+		
+		if (RearDot > AssassinateRearDotThreshold)
+		{
+			continue;
+		}
+		
+		const FVector PlayerToNpcDirection = -NpcToPlayerDirection;
+		
+		const float FacingDot = FVector::DotProduct(GetActorForwardVector().GetSafeNormal2D(), PlayerToNpcDirection);
+		
+		if (FacingDot < 0.2f)
+		{
+			continue;
+		}
+		
+		if (DistanceSq<BestDistanceSq)
+		{
+			BestDistanceSq = DistanceSq;
+			BestTarget = NPC;
+		}
+	}
+	
+	return BestTarget;
 }

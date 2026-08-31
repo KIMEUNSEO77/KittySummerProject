@@ -8,6 +8,8 @@
 #include "Animation/AnimInstance.h"
 #include "KittyCharacterPlayer.generated.h"
 
+class AKittyCharacterNonplayer;
+
 /**
  * 
  */
@@ -245,10 +247,13 @@ protected:
 	TObjectPtr<class AKTPistolPickup> PendingPistolPickup;
 
 	// 상호작용 중 조작 잠금
-	void BeginInteractionLock();
+	void BeginInteractionLock(bool bLockCamera = true);
 
 	// 상호작용 종료 후 조작 해제
 	void EndInteractionLock();
+
+	// 현재 상호작용이 카메라 회전까지 잠갔는지 기록
+	bool bInteractionLocksCamera = false;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Interaction|MotionWarping")
 	TObjectPtr<class UMotionWarpingComponent> MotionWarpingComponent;
@@ -288,4 +293,24 @@ protected:
 	// 애니메이션이 끝날 때까지 기억할 통신 단말기
 	UPROPERTY()
 	TObjectPtr<class AKTCommunicationTerminal> PendingTerminal;
+	
+public:
+	//암살 애니메이션
+	bool TryAssassinate();
+	
+	AKittyCharacterNonplayer* FindAssassinationTarget() const;
+	
+	UPROPERTY(EditDefaultsOnly, Category="Assassination")
+	float AssassinateRange = 180.0f;
+	
+	UPROPERTY(EditDefaultsOnly, Category="Assassination")
+	float AssassinateRearDotThreshold = -0.5f;
+	
+	UPROPERTY(EditDefaultsOnly, Category="Assassination|Animation")
+	TObjectPtr<UAnimMontage> AssassinationMontage;
+	
+	UPROPERTY()
+	TObjectPtr<AKittyCharacterNonplayer> AssassinationTarget;
+	
+	bool bAssassinationCommitted = false;
 };
