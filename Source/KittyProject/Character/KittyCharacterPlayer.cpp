@@ -1034,6 +1034,18 @@ void AKittyCharacterPlayer::HandleInteractionNotify(FName NotifyName, const FBra
 
 		return;
 	}
+	
+	//암살
+	if (NotifyName == TEXT("AssassinationHit"))
+	{
+		if (IsValid(AssassinationTarget))
+		{
+			AssassinationTarget->CompleteAssassination();
+			bAssassinationCommitted = true;
+		}
+
+		return;
+	}
 }
 
 void AKittyCharacterPlayer::HandleInteractionMontageEnded(UAnimMontage* Montage, bool bInterrupted)
@@ -1042,8 +1054,9 @@ void AKittyCharacterPlayer::HandleInteractionMontageEnded(UAnimMontage* Montage,
 	const bool bItemMontageEnded = Montage == ActiveItemPickupMontage;
 	const bool bKeycardMontageEnded = Montage == KeycardUseMontage;
 	const bool bTerminalMontageEnded = Montage == TerminalInteractionMontage;
+	const bool bAssassinationMontageEnded = Montage == AssassinationMontage;
 
-	if (!bPistolMontageEnded && !bItemMontageEnded && !bKeycardMontageEnded && !bTerminalMontageEnded)
+	if (!bPistolMontageEnded && !bItemMontageEnded && !bKeycardMontageEnded && !bTerminalMontageEnded && !bAssassinationMontageEnded)
 	{
 		return;
 	}
@@ -1062,7 +1075,24 @@ void AKittyCharacterPlayer::HandleInteractionMontageEnded(UAnimMontage* Montage,
 	{
 		PendingTerminal->CompleteTerminalInteraction(this);
 	}
+	
+	if (bAssassinationMontageEnded)
+	{
+		if (IsValid(MotionWarpingComponent))
+		{
+			MotionWarpingComponent->RemoveWarpTarget(TEXT("AssassinationTarget"));
+		}
 
+		// 실제 암살 타격 전에 몽타주가 중단된 경우
+		if (bInterrupted &&!bAssassinationCommitted && IsValid(AssassinationTarget))
+		{
+			AssassinationTarget->CancelAssassination();
+		}
+
+		AssassinationTarget = nullptr;
+		bAssassinationCommitted = false;
+	}
+	
 	PendingPistolPickup = nullptr;
 	PendingItemPickup = nullptr;
 	ActiveItemPickupMontage = nullptr;
@@ -1197,7 +1227,7 @@ AKittyCharacterNonplayer* AKittyCharacterPlayer::FindAssassinationTarget() const
 		
 		const float FacingDot = FVector::DotProduct(GetActorForwardVector().GetSafeNormal2D(), PlayerToNpcDirection);
 		
-		if (FacingDot > 0.2f)
+		if (FacingDot < 0.2f)
 		{
 			continue;
 		}
