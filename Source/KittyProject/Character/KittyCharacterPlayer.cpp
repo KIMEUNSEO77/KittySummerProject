@@ -2,6 +2,7 @@
 
 #include "Character/KittyCharacterPlayer.h"
 
+#include "AI/KittyAIController.h"
 #include "Camera/CameraComponent.h"
 #include "Animation/AnimInstance.h"
 #include "Animation/AnimSequence.h"
@@ -145,6 +146,15 @@ AKittyCharacterPlayer::AKittyCharacterPlayer()
 	{
 		CrouchedToStandingAnimation = CrouchedToStandingAnimationRef.Object;
 	}
+
+	static ConstructorHelpers::FObjectFinder<UAnimMontage> AssassinationMontageRef(
+		TEXT("/Game/Animations/Assassination/Assassination.Assassination")
+	);
+
+	if (AssassinationMontageRef.Succeeded())
+	{
+		AssassinationMontage = AssassinationMontageRef.Object;
+	}
 	
 	MotionWarpingComponent = CreateDefaultSubobject<UMotionWarpingComponent>(TEXT("MotionWarpingComponent"));
 	
@@ -160,6 +170,57 @@ void AKittyCharacterPlayer::BeginPlay()
 	Super::BeginPlay();
 	
 	SetCharacterControl(CurrentCharacterControlType);
+
+#if WITH_EDITOR
+	// 암살 정렬을 반복 검증하기 위한 PIE 전용 임시 배치입니다.
+	if (GetWorld() && GetWorld()->WorldType == EWorldType::PIE)
+	{
+		GetWorldTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
+		{
+			TArray<AActor*> Guards;
+			UGameplayStatics::GetAllActorsOfClass(GetWorld(), AKittyCharacterNonplayer::StaticClass(), Guards);
+
+			AKittyCharacterNonplayer* ClosestGuard = nullptr;
+			float ClosestDistanceSquared = TNumericLimits<float>::Max();
+
+			for (AActor* GuardActor : Guards)
+			{
+				AKittyCharacterNonplayer* Guard = Cast<AKittyCharacterNonplayer>(GuardActor);
+				if (!IsValid(Guard) || Guard->IsDead())
+				{
+					continue;
+				}
+
+				const float DistanceSquared = FVector::DistSquared(GetActorLocation(), Guard->GetActorLocation());
+				if (DistanceSquared < ClosestDistanceSquared)
+				{
+					ClosestDistanceSquared = DistanceSquared;
+					ClosestGuard = Guard;
+				}
+			}
+
+			if (!IsValid(ClosestGuard))
+			{
+				return;
+			}
+
+			const FVector TestLocation = GetActorLocation() + GetActorForwardVector() * 130.0f;
+			ClosestGuard->SetActorLocationAndRotation(
+				TestLocation,
+				GetActorRotation(),
+				false,
+				nullptr,
+				ETeleportType::TeleportPhysics
+			);
+
+			if (AKittyAIController* AIController = Cast<AKittyAIController>(ClosestGuard->GetController()))
+			{
+				AIController->StopMovement();
+				AIController->StopAI();
+			}
+		}));
+	}
+#endif
 }
 
 void AKittyCharacterPlayer::Tick(float DeltaTime)

@@ -46,6 +46,15 @@ AKittyCharacterNonplayer::AKittyCharacterNonplayer()
 	{
 		RightDeathMontage = RightDeathMontageRef.Object;
 	}
+
+	static ConstructorHelpers::FObjectFinder<UAnimMontage> AssassinatedMontageRef(
+		TEXT("/Game/Animations/Assassination/Assassinated.Assassinated")
+	);
+
+	if (AssassinatedMontageRef.Succeeded())
+	{
+		AssassinatedMontage = AssassinatedMontageRef.Object;
+	}
 	
 	BatonAttackComponent = CreateDefaultSubobject<UKTBatonAttackComponent>(TEXT("BatonAttackComponent"));
 	
