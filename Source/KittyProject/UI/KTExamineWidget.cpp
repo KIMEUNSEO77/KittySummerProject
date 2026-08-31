@@ -8,7 +8,7 @@ UKTExamineWidget::UKTExamineWidget(
 	const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
-	bIsFocusable = true;
+	SetIsFocusable(true);
 }
 
 void UKTExamineWidget::SetItemData(
