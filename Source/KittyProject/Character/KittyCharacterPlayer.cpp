@@ -22,6 +22,7 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "TimerManager.h"
 #include "DrawDebugHelpers.h"
+#include "KittyCharacterNonplayer.h"
 #include "Item/KTPistolPickup.h"
 #include "Inventory/KTInventoryComponent.h"
 #include "Player/KittyPlayerController.h"
@@ -441,6 +442,11 @@ void AKittyCharacterPlayer::CheckForInteractable()
 
 void AKittyCharacterPlayer::Interact()
 {
+	if (TryAssassinate())
+	{
+		return;
+	}
+	
 	// 현재 상호작용 대상이 없으면 아무것도 하지 않음
 	if (!IsValid(CurrentInteractable))
 	{
@@ -1064,4 +1070,144 @@ void AKittyCharacterPlayer::HandleInteractionMontageEnded(UAnimMontage* Montage,
 	PendingTerminal = nullptr;
 
 	EndInteractionLock();
+}
+
+bool AKittyCharacterPlayer::TryAssassinate()
+{
+	if (bIsPerformingInteraction ||
+		!IsValid(AssassinationMontage) ||
+		!IsValid(MotionWarpingComponent))
+	{
+		return false;
+	}
+	
+	AKittyCharacterNonplayer* Target = FindAssassinationTarget();
+	
+	if (!IsValid(Target))
+	{
+		return false;
+	}
+	
+	if (!Target->BeginAssassination())
+	{
+		return false;
+	}
+	
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	
+	if (!IsValid(AnimInstance))
+	{
+		Target->CancelAssassination();
+		return false;
+	}
+	
+	AssassinationTarget = Target;
+	bAssassinationCommitted = false;
+	
+	StopAiming();
+	BeginInteractionLock();
+	
+	// NPC 뒤쪽의 플레이어 도착 지점
+	const FVector WarpLocation = Target->GetActorLocation() - Target->GetActorForwardVector() * AssassinationStandOff;
+	
+	const FTransform WarpTransform(Target->GetActorRotation(), WarpLocation);
+	
+	MotionWarpingComponent->AddOrUpdateWarpTargetFromTransform(TEXT("AssassinationTarget"), WarpTransform);
+	
+	AnimInstance->OnPlayMontageNotifyBegin.AddUniqueDynamic(this, &AKittyCharacterPlayer::HandleInteractionNotify);
+	
+	AnimInstance->OnMontageEnded.AddUniqueDynamic(this, &AKittyCharacterPlayer::HandleInteractionMontageEnded);
+	
+	const float Duration = AnimInstance->Montage_Play(AssassinationMontage);
+	
+	if (Duration <= 0.0f)
+	{
+		Target->CancelAssassination();
+		AssassinationTarget = nullptr;
+
+		MotionWarpingComponent->RemoveWarpTarget(TEXT("AssassinationTarget"));
+
+		EndInteractionLock();
+		return false;
+	}
+
+	return true;
+}
+
+AKittyCharacterNonplayer* AKittyCharacterPlayer::FindAssassinationTarget() const
+{
+	TArray<FOverlapResult> Results;
+	
+	FCollisionObjectQueryParams ObjectParams;
+	ObjectParams.AddObjectTypesToQuery(ECC_Pawn);
+	
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(this);
+	
+	const bool bFound = GetWorld()->OverlapMultiByObjectType(
+		Results, 
+		GetActorLocation(), 
+		FQuat::Identity, 
+		ObjectParams, 
+		FCollisionShape::MakeSphere(AssassinateRange),
+		QueryParams);
+	
+	if (!bFound)
+	{
+		return nullptr;
+	}
+	
+	AKittyCharacterNonplayer* BestTarget = nullptr;
+	float BestDistanceSq = TNumericLimits<float>::Max();
+	
+	for (const FOverlapResult& result : Results)
+	{
+		AKittyCharacterNonplayer* NPC = Cast<AKittyCharacterNonplayer>(result.GetActor());
+		
+		if (!IsValid(NPC)||NPC->IsDead())
+		{
+			continue;
+		}
+		
+		FVector NpcToPlayer = GetActorLocation() - NPC->GetActorLocation();
+		
+		if (FMath::Abs(NpcToPlayer.Z)>100.0f)
+		{
+			continue;
+		}
+		NpcToPlayer.Z = 0.0f;
+		
+		const float DistanceSq = NpcToPlayer.SizeSquared();
+		
+		if (DistanceSq > FMath::Square(AssassinateRange))
+		{
+			continue;
+		}
+		
+		const FVector NpcToPlayerDirection = NpcToPlayer.GetSafeNormal();
+		
+		const float RearDot = FVector::DotProduct(NPC->GetActorForwardVector().GetSafeNormal2D(), NpcToPlayerDirection);
+		
+		if (RearDot > AssassinateRearDotThreshold)
+		{
+			continue;
+		}
+		
+		const FVector PlayerToNpcDirection = -NpcToPlayerDirection;
+		
+		const float FacingDot = FVector::DotProduct(GetActorForwardVector().GetSafeNormal2D(), PlayerToNpcDirection);
+		
+		if (FacingDot > 0.2f)
+		{
+			continue;
+		}
+		
+		if (DistanceSq<BestDistanceSq)
+		{
+			BestDistanceSq = DistanceSq;
+			BestTarget = NPC;
+		}
+	}
+	
+	return BestTarget;
 }
