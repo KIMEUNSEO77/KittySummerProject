@@ -932,16 +932,21 @@ void AKittyCharacterPlayer::StartTerminalInteraction(class AKTCommunicationTermi
 	}
 }
 
-void AKittyCharacterPlayer::BeginInteractionLock()
+void AKittyCharacterPlayer::BeginInteractionLock(bool bLockCamera)
 {
 	bIsPerformingInteraction = true;
+	bInteractionLocksCamera = bLockCamera;
 
 	GetCharacterMovement()->StopMovementImmediately();
 
 	if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
 	{
 		PlayerController->SetIgnoreMoveInput(true);
-		PlayerController->SetIgnoreLookInput(true);
+
+		if (bInteractionLocksCamera)
+		{
+			PlayerController->SetIgnoreLookInput(true);
+		}
 	}
 }
 
@@ -952,8 +957,14 @@ void AKittyCharacterPlayer::EndInteractionLock()
 	if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
 	{
 		PlayerController->SetIgnoreMoveInput(false);
-		PlayerController->SetIgnoreLookInput(false);
+
+		if (bInteractionLocksCamera)
+		{
+			PlayerController->SetIgnoreLookInput(false);
+		}
 	}
+
+	bInteractionLocksCamera = false;
 }
 
 void AKittyCharacterPlayer::HandleInteractionNotify(FName NotifyName, const FBranchingPointNotifyPayload& BranchingPointPayload)
@@ -1146,7 +1157,8 @@ bool AKittyCharacterPlayer::TryAssassinate()
 	bAssassinationCommitted = false;
 	
 	StopAiming();
-	BeginInteractionLock();
+	// 암살 중에는 이동만 잠그고 카메라 회전 입력은 허용한다.
+	BeginInteractionLock(false);
 	
 	// 암살 애니메이션에 Root Motion이 없어도 두 캐릭터가 반드시 같은 기준점에서
 	// 시작하도록 플레이어를 경비원의 암살 앵커로 먼저 강제 이동시킨다.

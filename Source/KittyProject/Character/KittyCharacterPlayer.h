@@ -247,10 +247,13 @@ protected:
 	TObjectPtr<class AKTPistolPickup> PendingPistolPickup;
 
 	// 상호작용 중 조작 잠금
-	void BeginInteractionLock();
+	void BeginInteractionLock(bool bLockCamera = true);
 
 	// 상호작용 종료 후 조작 해제
 	void EndInteractionLock();
+
+	// 현재 상호작용이 카메라 회전까지 잠갔는지 기록
+	bool bInteractionLocksCamera = false;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Interaction|MotionWarping")
 	TObjectPtr<class UMotionWarpingComponent> MotionWarpingComponent;
