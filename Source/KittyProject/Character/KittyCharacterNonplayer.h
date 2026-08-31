@@ -169,4 +169,19 @@ public:
 	// 경비원 사망 이벤트
 	UPROPERTY(BlueprintAssignable, Category = "Guard|Death")
 	FOnGuardDiedSignature OnGuardDied;
+	
+	//Assassinate Section
+public:
+	//경비원 암살 기능
+	bool BeginAssassination();
+	void CompleteAssassination();
+	void CancelAssassination();
+	
+private:
+	UPROPERTY(EditDefaultsOnly, Category="Assassination|Animation")
+	TObjectPtr<UAnimMontage> AssassinatedMontage;
+	
+	bool bIsBeingAssassinated = false;
+	
+	ECollisionResponse PreviousPawnCollisionResponse;
 };

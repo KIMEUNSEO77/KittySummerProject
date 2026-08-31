@@ -152,6 +152,71 @@ void AKittyCharacterNonplayer::SetGuardWeaponType(EGuardWeaponType NewType)
 	OnGuardWeaponTypeChanged(NewType);
 }
 
+bool AKittyCharacterNonplayer::BeginAssassination()
+{
+	if (bIsDead ||
+	bIsBeingAssassinated ||
+	!IsValid(AssassinatedMontage))
+	{
+		return false;
+	}
+	
+	bIsBeingAssassinated = true;
+	
+	if (AKittyAIController* AIController = Cast<AKittyAIController>(GetController()))
+	{
+		AIController->StopMovement();
+		AIController->ClearFocus(EAIFocusPriority::Gameplay);
+		AIController->StopAI();
+	}
+	
+	GetCharacterMovement()->StopMovementImmediately();
+	
+	PreviousPawnCollisionResponse = GetCapsuleComponent()->GetCollisionResponseToChannel(ECC_Pawn);
+	
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
+	
+	const float Duration = PlayAnimMontage(AssassinatedMontage);
+	
+	if (Duration <= 0.0f)
+	{
+		CancelAssassination();
+		return false;
+	}
+	
+	return true;
+}
+
+void AKittyCharacterNonplayer::CompleteAssassination()
+{
+	if (!bIsBeingAssassinated||bIsDead)
+	{
+		return;
+	}
+	
+	bIsBeingAssassinated = false;
+	
+	Die(nullptr);
+}
+
+void AKittyCharacterNonplayer::CancelAssassination()
+{
+	if (!bIsBeingAssassinated || bIsDead)
+	{
+		return;
+	}
+
+	bIsBeingAssassinated = false;
+	StopAnimMontage(AssassinatedMontage);
+
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Pawn,PreviousPawnCollisionResponse);
+
+	if (AKittyAIController* AIController = Cast<AKittyAIController>(GetController()))
+	{
+		AIController->RunAI();
+	}
+}
+
 float AKittyCharacterNonplayer::GetAITurnSpeed()
 {
 	return 500.0f;
