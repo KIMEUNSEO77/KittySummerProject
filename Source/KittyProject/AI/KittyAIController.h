@@ -25,6 +25,9 @@ public:
 	void RunAI();
 	void StopAI();
 	
+	UFUNCTION(BlueprintCallable, Category = "AI|Detection")
+	void SetForcedTarget(AActor* NewTarget);
+	
 protected:
 	virtual void OnPossess(APawn* InPawn) override;
 	
@@ -48,11 +51,11 @@ private:
 	TObjectPtr<UAISenseConfig_Sight> SightConfig;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI|Sight", meta = (AllowPrivateAccess = "true", ClampMin = "0.0"))
-	float SightRadius = 700.0f;
+	float SightRadius = 1200.0f;
 	
 	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category = "AI|Sight",meta = (AllowPrivateAccess = "true", ClampMin = "0.0"))
-	float LoseSightRadius = 850.0f;
+	float LoseSightRadius = 1500.0f;
 	
 	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category = "AI|Sight",meta = (AllowPrivateAccess = "true",ClampMin = "0.0",ClampMax = "180.0"))
-	float PeripheralVisionHalfAngle = 45.0f;
+	float PeripheralVisionHalfAngle = 65.0f;
 };
