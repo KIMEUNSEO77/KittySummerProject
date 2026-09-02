@@ -43,7 +43,20 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Civilian|Reaction")
 	bool bHasReacted = false;
 	
-	void ResumeAmbientAnimation();
+	// 일정 간격으로 플레이어 감지
+	void CheckPlayerDetection();
 
-	FTimerHandle ReactionAnimationTimer;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Civilian|Detection")
+	float DetectionInterval = 0.2f;
+
+	FTimerHandle DetectionTimer;
+	
+	UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "Civilian|Ambient")
+	TObjectPtr<class AAmbientSound> AmbientConversationSound;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Civilian|Detection")
+	float DetectionHalfAngle = 65.0f;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Civilian|Detection")
+	float DetectionYawOffset = 0.0f;
 };

@@ -7,6 +7,9 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "TimerManager.h"
+#include "Character/KittyCharacterPlayer.h"
+#include "Sound/AmbientSound.h"
+#include "Components/AudioComponent.h"
 
 AKTCharacterCivilian::AKTCharacterCivilian()
 {
@@ -21,6 +24,14 @@ void AKTCharacterCivilian::TriggerStartledReaction()
 	}
 
 	bHasReacted = true;
+	
+	if (IsValid(AmbientConversationSound))
+	{
+		if (UAudioComponent* AudioComponent = AmbientConversationSound->GetAudioComponent())
+		{
+			AudioComponent->FadeOut(0.2f, 0.0f);
+		}
+	}
 
 	// 놀람 애니메이션 재생
 	GetMesh()->PlayAnimation(StartledAnimation, false);
@@ -40,15 +51,6 @@ void AKTCharacterCivilian::TriggerStartledReaction()
 			);
 		}
 	}
-
-	// 기존 생활 애니메이션으로 복귀
-	GetWorldTimerManager().SetTimer(
-		ReactionAnimationTimer,
-		this,
-		&AKTCharacterCivilian::ResumeAmbientAnimation,
-		StartledAnimation->GetPlayLength(),
-		false
-	);
 }
 
 void AKTCharacterCivilian::BeginPlay()
@@ -65,12 +67,53 @@ void AKTCharacterCivilian::BeginPlay()
 		GetMesh()->SetAnimationMode(EAnimationMode::AnimationSingleNode);
 		GetMesh()->PlayAnimation(AmbientAnimation, bLoopAmbientAnimation);
 	}
+	
+	GetWorldTimerManager().SetTimer(DetectionTimer, this, &AKTCharacterCivilian::CheckPlayerDetection, DetectionInterval, true);
 }
 
-void AKTCharacterCivilian::ResumeAmbientAnimation()
+void AKTCharacterCivilian::CheckPlayerDetection()
 {
-	if (IsValid(GetMesh()) && IsValid(AmbientAnimation))
+	if (bHasReacted)
 	{
-		GetMesh()->PlayAnimation(AmbientAnimation, bLoopAmbientAnimation);
+		GetWorldTimerManager().ClearTimer(DetectionTimer);
+		return;
 	}
+
+	AKittyCharacterPlayer* Player = Cast<AKittyCharacterPlayer>(UGameplayStatics::GetPlayerCharacter(this, 0));
+
+	if (!IsValid(Player))
+	{
+		return;
+	}
+
+	const float DistanceSquared = FVector::DistSquared(GetActorLocation(), Player->GetActorLocation());
+
+	if (DistanceSquared > FMath::Square(DetectionRange))
+	{
+		return;
+	}
+	
+	// 높이 차이는 제외하고 수평 방향만 비교
+	FVector DirectionToPlayer = Player->GetActorLocation() - GetActorLocation();
+
+	DirectionToPlayer.Z = 0.0f;
+	DirectionToPlayer.Normalize();
+
+	// NPC의 정면 방향
+	FVector DetectionForward = GetActorForwardVector();
+	DetectionForward.Z = 0.0f;
+	DetectionForward.Normalize();
+
+	// 보이는 메시와 Actor 정면이 다를 때 방향 보정
+	DetectionForward = DetectionForward.RotateAngleAxis(DetectionYawOffset, FVector::UpVector);
+
+	const float ViewDot = FVector::DotProduct(DetectionForward, DirectionToPlayer);
+	const float MinimumViewDot = FMath::Cos(FMath::DegreesToRadians(DetectionHalfAngle));
+
+	if (ViewDot < MinimumViewDot)
+	{
+		return;
+	}
+
+	TriggerStartledReaction();
 }
