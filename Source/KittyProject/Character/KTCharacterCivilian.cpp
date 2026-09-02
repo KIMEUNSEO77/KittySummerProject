@@ -10,6 +10,10 @@
 #include "Character/KittyCharacterPlayer.h"
 #include "Sound/AmbientSound.h"
 #include "Components/AudioComponent.h"
+#include "AI/KittyAIController.h"
+#include "Character/KittyCharacterNonplayer.h"
+#include "Engine/TargetPoint.h"
+#include "Engine/World.h"
 
 AKTCharacterCivilian::AKTCharacterCivilian()
 {
@@ -44,12 +48,13 @@ void AKTCharacterCivilian::TriggerStartledReaction()
 
 		if (IsValid(SelectedSound))
 		{
-			UGameplayStatics::PlaySoundAtLocation(
-				this,
-				SelectedSound,
-				GetActorLocation()
-			);
+			UGameplayStatics::PlaySoundAtLocation(this, SelectedSound, GetActorLocation());
 		}
+	}
+	
+	if (GuardClass && IsValid(GuardSpawnPoint))
+	{
+		GetWorldTimerManager().SetTimer(GuardSpawnTimer, this, &AKTCharacterCivilian::SpawnAlertGuard, GuardSpawnDelay, false);
 	}
 }
 
@@ -116,4 +121,44 @@ void AKTCharacterCivilian::CheckPlayerDetection()
 	}
 
 	TriggerStartledReaction();
+}
+
+void AKTCharacterCivilian::SpawnAlertGuard()
+{
+	if (!GuardClass || !IsValid(GuardSpawnPoint))
+	{
+		return;
+	}
+
+	UWorld* World = GetWorld();
+
+	if (!IsValid(World))
+	{
+		return;
+	}
+
+	FActorSpawnParameters SpawnParameters; 
+	SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+
+	AKittyCharacterNonplayer* SpawnedGuard = World->SpawnActor<AKittyCharacterNonplayer>(GuardClass, GuardSpawnPoint->GetActorLocation(),
+			GuardSpawnPoint->GetActorRotation(), SpawnParameters);
+
+	if (!IsValid(SpawnedGuard))
+	{
+		return;
+	}
+
+	// AI Controller가 아직 생성되지 않았다면 즉시 생성
+	if (!IsValid(SpawnedGuard->GetController()))
+	{
+		SpawnedGuard->SpawnDefaultController();
+	}
+
+	AKittyAIController* AIController = Cast<AKittyAIController>(SpawnedGuard->GetController());
+	AKittyCharacterPlayer* Player = Cast<AKittyCharacterPlayer>(UGameplayStatics::GetPlayerCharacter(this, 0));
+
+	if (IsValid(AIController) && IsValid(Player))
+	{
+		AIController->SetForcedTarget(Player);
+	}
 }

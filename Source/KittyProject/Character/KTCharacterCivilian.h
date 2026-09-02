@@ -59,4 +59,19 @@ protected:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Civilian|Detection")
 	float DetectionYawOffset = 0.0f;
+	
+	UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "Civilian|Guard")
+	TObjectPtr<class ATargetPoint> GuardSpawnPoint;
+	
+	// 발각됐을 때 생성할 경비원
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Civilian|Guard")
+	TSubclassOf<class AKittyCharacterNonplayer> GuardClass;
+
+	// 경비원이 등장하기까지의 시간
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Civilian|Guard")
+	float GuardSpawnDelay = 1.0f;
+
+	void SpawnAlertGuard();
+
+	FTimerHandle GuardSpawnTimer;
 };

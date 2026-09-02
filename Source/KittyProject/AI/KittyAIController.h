@@ -25,6 +25,9 @@ public:
 	void RunAI();
 	void StopAI();
 	
+	UFUNCTION(BlueprintCallable, Category = "AI|Detection")
+	void SetForcedTarget(AActor* NewTarget);
+	
 protected:
 	virtual void OnPossess(APawn* InPawn) override;
 	

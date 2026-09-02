@@ -92,6 +92,28 @@ void AKittyAIController::StopAI()
 	}
 }
 
+void AKittyAIController::SetForcedTarget(AActor* NewTarget)
+{
+	if (!IsValid(NewTarget))
+	{
+		return;
+	}
+
+	UBlackboardComponent* BlackboardComponent = GetBlackboardComponent();
+
+	if (!IsValid(BlackboardComponent))
+	{
+		return;
+	}
+
+	BlackboardComponent->SetValueAsObject(TEXT("Target"), NewTarget);
+	BlackboardComponent->SetValueAsVector(TEXT("LastSeenLocation"), NewTarget->GetActorLocation());
+	BlackboardComponent->SetValueAsBool(TEXT("IsSearching"), false);
+	BlackboardComponent->SetValueAsBool(TEXT("IsPatrolEnabled"), false);
+
+	SetFocus(NewTarget, EAIFocusPriority::Gameplay);
+}
+
 void AKittyAIController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
