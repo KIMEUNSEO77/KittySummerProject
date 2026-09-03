@@ -54,8 +54,7 @@ private:
 	float SightRadius = 1200.0f;
 	
 	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category = "AI|Sight",meta = (AllowPrivateAccess = "true", ClampMin = "0.0"))
-	float LoseSightRadius = 150
-	0.0f;
+	float LoseSightRadius = 1500.0f;
 	
 	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category = "AI|Sight",meta = (AllowPrivateAccess = "true",ClampMin = "0.0",ClampMax = "180.0"))
 	float PeripheralVisionHalfAngle = 65.0f;
