@@ -16,6 +16,7 @@ class UKTMissionSubsystem;
 class UKTMissionDataAsset;
 class UKTExamineWidget;
 class UKTItemDataAsset;
+class UKTRadioSubtitleWidget;
 
 /**
  * 
@@ -146,4 +147,25 @@ protected:
 	
 	// 시네마틱으로 게임 UI를 숨긴 상태인지 확인
 	bool bIsGameplayUIHidden = false;
+	
+	// Radio Section
+public:
+	UFUNCTION(BlueprintCallable, Category = "Radio")
+	void PlayRadioMessage(USoundBase* VoiceSound, const FText& SpeakerName, const FText& SubtitleText, bool bLockInput = true);
+	
+protected:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI|Radio")
+	TSubclassOf<UKTRadioSubtitleWidget> RadioSubtitleClass;
+
+	UPROPERTY()
+	TObjectPtr<UKTRadioSubtitleWidget> RadioSubtitleWidget;
+	
+	UFUNCTION()
+	void HandleRadioMessageFinished();
+
+	UPROPERTY()
+	TObjectPtr<class UAudioComponent> ActiveRadioAudio;
+
+	bool bIsRadioPlaying = false;
+	bool bRadioInputLocked = false;
 };

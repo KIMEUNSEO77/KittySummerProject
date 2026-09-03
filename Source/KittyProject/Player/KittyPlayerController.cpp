@@ -15,6 +15,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "UI/KTExamineWidget.h"
 #include "Inventory/KTItemDataAsset.h"
+#include "UI/KTRadioSubtitleWidget.h"
+#include "Components/AudioComponent.h"
 
 void AKittyPlayerController::BeginPlay()
 {
@@ -73,6 +75,20 @@ void AKittyPlayerController::BeginPlay()
 		if (MissionNotificationWidget)
 		{
 			MissionNotificationWidget->AddToViewport(10);
+		}
+	}
+	
+	if (RadioSubtitleClass)
+	{
+		RadioSubtitleWidget =
+			CreateWidget<UKTRadioSubtitleWidget>(
+				this,
+				RadioSubtitleClass
+			);
+
+		if (RadioSubtitleWidget)
+		{
+			RadioSubtitleWidget->AddToViewport(50);
 		}
 	}
 	
@@ -541,4 +557,53 @@ void AKittyPlayerController::CloseExamine()
 void AKittyPlayerController::HandleExamineCloseRequested()
 {
 	CloseExamine();
+}
+
+void AKittyPlayerController::PlayRadioMessage(USoundBase* VoiceSound, const FText& SpeakerName,
+	const FText& SubtitleText, bool bLockInput)
+{
+	if (bIsRadioPlaying || !IsValid(VoiceSound) || !IsValid(RadioSubtitleWidget))
+	{
+		return;
+	}
+
+	bIsRadioPlaying = true;
+	bRadioInputLocked = bLockInput;
+
+	RadioSubtitleWidget->ShowRadioSubtitle(SpeakerName, SubtitleText);
+
+	if (bRadioInputLocked)
+	{
+		SetIgnoreMoveInput(true);
+		SetIgnoreLookInput(true);
+	}
+
+	ActiveRadioAudio = UGameplayStatics::SpawnSound2D(this, VoiceSound);
+
+	if (IsValid(ActiveRadioAudio))
+	{
+		ActiveRadioAudio->OnAudioFinished.AddDynamic(this, &AKittyPlayerController::HandleRadioMessageFinished);
+	}
+	else
+	{
+		HandleRadioMessageFinished();
+	}
+}
+
+void AKittyPlayerController::HandleRadioMessageFinished()
+{
+	if (IsValid(RadioSubtitleWidget))
+	{
+		RadioSubtitleWidget->HideRadioSubtitle();
+	}
+
+	if (bRadioInputLocked)
+	{
+		SetIgnoreMoveInput(false);
+		SetIgnoreLookInput(false);
+	}
+
+	ActiveRadioAudio = nullptr;
+	bIsRadioPlaying = false;
+	bRadioInputLocked = false;
 }
