@@ -9,7 +9,9 @@
 #include "KittyCharacterPlayer.generated.h"
 
 class AKittyCharacterNonplayer;
-
+class UKTSpectralVisionComponent;
+class USpringArmComponent;
+class UCameraComponent;
 /**
  * 
  */
@@ -26,6 +28,18 @@ public:
 	{
 		return InventoryComponent;
 	}
+	
+public:
+	USpringArmComponent* GetCameraBoom() const
+	{
+		return CameraBoom;
+	}
+
+	UCameraComponent* GetFollowCamera() const
+	{
+		return FollowCamera;
+	}
+	void ForceDeactivateSpectralVision();
 	
 	void EnterInventoryCamera();
     void ExitInventoryCamera();
@@ -90,6 +104,13 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UInputAction> InteractionAction;
 	
+	UPROPERTY(EditAnywhere,BlueprintReadOnly,Category = Input,meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UInputAction> SpectralVisionAction;
+	
+	UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category = "Spectral Vision",meta = (AllowPrivateAccess = "true"))
+	
+	TObjectPtr<UKTSpectralVisionComponent>
+		SpectralVisionComponent;
 	void ShoulderMove(const FInputActionValue& Value);
 	void ShoulderLook(const FInputActionValue& Value);
 	

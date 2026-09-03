@@ -246,7 +246,10 @@ void AKittyPlayerController::OpenInventory()
 	{
 		return;
 	}
-
+	
+	PlayerCharacter->
+		ForceDeactivateSpectralVision();
+	
 	if (!InventoryWidget)
 	{
 		InventoryWidget = CreateWidget<UKTInventoryWidget>(
@@ -391,7 +394,14 @@ void AKittyPlayerController::SetGameplayUIVisible(bool bVisible)
 	bIsGameplayUIHidden = !bVisible;
 	
 	if (!bVisible)
-	{
+	{ 
+		if (AKittyCharacterPlayer* PlayerCharacter =
+			Cast<AKittyCharacterPlayer>(GetPawn()))
+		{
+		PlayerCharacter->
+			ForceDeactivateSpectralVision();
+		}
+		
 		// 시네마틱 시작: 현재 게임 UI 숨기기
 		if (MissionTrackerWidget)
 		{
@@ -453,7 +463,10 @@ void AKittyPlayerController::OpenExamine(
 	{
 		return;
 	}
-
+	
+	PlayerCharacter->
+		ForceDeactivateSpectralVision();
+	
 	if (!ExamineWidget)
 	{
 		ExamineWidget = CreateWidget<UKTExamineWidget>(

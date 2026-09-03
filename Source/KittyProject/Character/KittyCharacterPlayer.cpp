@@ -33,6 +33,7 @@
 #include "MotionWarpingComponent.h"
 #include "Interaction/KTKeycardDoor.h"
 #include "Interaction/KTCommunicationTerminal.h"
+#include "Vision/KTSpectralVisionComponent.h"
 
 AKittyCharacterPlayer::AKittyCharacterPlayer()
 {
@@ -40,6 +41,8 @@ AKittyCharacterPlayer::AKittyCharacterPlayer()
 	InventoryComponent = CreateDefaultSubobject<UKTInventoryComponent>(
 		TEXT("InventoryComponent")
 	);
+	
+	SpectralVisionComponent =CreateDefaultSubobject<UKTSpectralVisionComponent>(TEXT("SpectralVisionComponent"));
 	
 	// Camera
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
@@ -131,6 +134,15 @@ AKittyCharacterPlayer::AKittyCharacterPlayer()
 	{
 		CrouchAction = InputActionCrouchRef.Object;
 	}
+	
+	static ConstructorHelpers::FObjectFinder<UInputAction>SpectralVisionActionRef(TEXT("/Game/MyInput/Input/Actions/IA_SpectralVision.IA_SpectralVision"));
+
+	if (SpectralVisionActionRef.Succeeded())
+	{
+		SpectralVisionAction =
+			SpectralVisionActionRef.Object;
+	}
+	
 
 	static ConstructorHelpers::FObjectFinder<UAnimSequence> StandingToCrouchedAnimationRef(TEXT("/Game/Animations/Crouch/Standing_To_Crouched.Standing_To_Crouched"));
 
@@ -202,7 +214,20 @@ void AKittyCharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInp
 	EnhancedInputComponent->BindAction(InventoryAction,ETriggerEvent::Started,this,&AKittyCharacterPlayer::ToggleInventory);
 	EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Started, this, &AKittyCharacterPlayer::CrouchStart);
 	EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Completed, this, &AKittyCharacterPlayer::CrouchEnd);
-
+	
+	if (
+		SpectralVisionAction &&
+		SpectralVisionComponent
+	)
+	{
+		EnhancedInputComponent->BindAction(
+			SpectralVisionAction,
+			ETriggerEvent::Started,
+			SpectralVisionComponent.Get(),
+			&UKTSpectralVisionComponent::ToggleVision
+		);
+	}
+	
 }
 
 void AKittyCharacterPlayer::ChangeCharacterControl()
@@ -634,6 +659,16 @@ void AKittyCharacterPlayer::PerformFireTrace()
 	//{
 		//GEngine->AddOnScreenDebugMessage(20, 1.5f, FColor::Cyan, FString::Printf(TEXT("명중: %s"), *HitActor->GetName()));
 	//}
+}
+
+void AKittyCharacterPlayer::
+ForceDeactivateSpectralVision()
+{
+	if (IsValid(SpectralVisionComponent))
+	{
+		SpectralVisionComponent->
+			DeactivateVision();
+	}
 }
 
 void AKittyCharacterPlayer::ToggleInventory()
