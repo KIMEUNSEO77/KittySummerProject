@@ -164,28 +164,6 @@ void AKTSecurityCamera::UpdatePlayerDetection(float DeltaTime)
 			1.0f
 		);
 
-	if (bShowDetectionDebug)
-	{
-		if (GEngine)
-		{
-			const FString DebugText =
-				FString::Printf(
-					TEXT("CCTV 감지 게이지: %.0f%%"),
-					DetectionProgress * 100.0f
-				);
-
-			// 같은 메시지를 갱신하여 화면 도배 방지
-			GEngine->AddOnScreenDebugMessage(
-				8721,
-				0.0f,
-				bCanSeePlayer
-					? FColor::Red
-					: FColor::Green,
-				DebugText
-			);
-		}
-	}
-
 	if (DetectionProgress >= 1.0f && !bAlarmTriggered)
 	{
 		TriggerAlarm();
@@ -288,16 +266,6 @@ void AKTSecurityCamera::TriggerAlarm()
 		{
 			MissionSubsystem->BroadcastMissionEvent(CCTVDetectedTag, this);
 		}
-	}
-
-	if (GEngine)
-	{
-		GEngine->AddOnScreenDebugMessage(
-			-1,
-			5.0f,
-			FColor::Red,
-			TEXT("경보 발생! CCTV에 발각되었습니다.")
-		);
 	}
 }
 
