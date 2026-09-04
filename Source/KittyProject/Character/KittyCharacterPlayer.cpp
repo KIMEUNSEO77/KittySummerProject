@@ -775,15 +775,13 @@ void AKittyCharacterPlayer::UpdateInventoryCamera(float DeltaTime)
 			? InventoryCameraArmLength
 			: NormalCameraArmLength;
 
+	// 조사/인벤토리에서도 기본 카메라의 좌우·높이 위치를 유지합니다.
 	const FVector TargetSocketOffset =
-		bIsInventoryCameraActive
-			? InventoryCameraSocketOffset
-			: NormalCameraSocketOffset;
+		NormalCameraSocketOffset;
 
+	// 조사/인벤토리에서도 기본 카메라 FOV를 유지합니다.
 	const float TargetFOV =
-		bIsInventoryCameraActive
-			? InventoryCameraFOV
-			: NormalCameraFOV;
+		NormalCameraFOV;
 
 	CameraBoom->TargetArmLength = FMath::Lerp(
 		CameraTransitionStartArmLength,
