@@ -57,7 +57,13 @@ void UKTSpectralVisionComponent::EndPlay(
 )
 {
     DeactivateVision();
+    // 맵 종료 중에는 다음 Tick이 없을 수 있으므로
+    // 페이드를 기다리지 않고 즉시 원래 설정을 복구합니다.
+    VisionTransitionAlpha = 0.0f;
+    VisionTransitionDirection = 0.0f;
 
+    RestoreVisionVisuals();
+    
     Super::EndPlay(EndPlayReason);
 }
 
@@ -127,13 +133,12 @@ void UKTSpectralVisionComponent::ActivateVision()
         FollowCamera->FieldOfView;
 
     // 진입 애니메이션 시작
-    VisionTransitionAlpha = 0.0f;
-    VisionTransitionDirection = 1.0f;
 
     bVisionEnabled = true;
     
     // 흑백 Post Process 적용
     ApplyVisionVisuals();
+    VisionTransitionDirection = 1.0f;
     
     // 현재 시간 배율을 저장한 후 슬로모션 적용
     PreviousTimeDilation =
@@ -176,11 +181,12 @@ void UKTSpectralVisionComponent::DeactivateVision()
     }
 
     bVisionEnabled = false;
+    
+    // 흑백에서 컬러 방향으로 페이드를 시작합니다.
+    VisionTransitionDirection = -1.0f;
+    
     // DOF 설정 복구
     RestoreDepthOfField();
-    
-    // 흑백 화면을 기존 컬러 설정으로 복구
-    RestoreVisionVisuals();
     
     // Spectral Vision을 켜기 전 시간 배율로 복구
     UGameplayStatics::SetGlobalTimeDilation(
@@ -239,8 +245,115 @@ UKTSpectralVisionComponent::GetVisionSubsystem() const
 
 void UKTSpectralVisionComponent::UpdateVisionTransition()
 {
-    const float RealDeltaTime = FApp::GetDeltaTime();
-    (void)RealDeltaTime;
+    // 전환 중이 아니면 아무것도 하지 않습니다.
+    if (FMath::IsNearlyZero(
+        VisionTransitionDirection
+    ))
+    {
+        return;
+    }
+
+    if (!bHasSavedVisualSettings)
+    {
+        return;
+    }
+
+    AKittyCharacterPlayer* Player =
+        GetPlayerCharacter();
+
+    if (!IsValid(Player))
+    {
+        return;
+    }
+
+    UCameraComponent* FollowCamera =
+        Player->GetFollowCamera();
+
+    if (!IsValid(FollowCamera))
+    {
+        return;
+    }
+
+    // 슬로모션의 영향을 받지 않는 실제 프레임 시간을 사용합니다.
+    const float RealDeltaTime =
+        FApp::GetDeltaTime();
+
+    const float SafeFadeDuration =
+        FMath::Max(
+            VisionFadeDuration,
+            0.01f
+        );
+
+    VisionTransitionAlpha +=
+        VisionTransitionDirection *
+        RealDeltaTime /
+        SafeFadeDuration;
+
+    VisionTransitionAlpha =
+        FMath::Clamp(
+            VisionTransitionAlpha,
+            0.0f,
+            1.0f
+        );
+
+    // 시작과 끝이 부드러운 Ease In/Out 값입니다.
+    const float SmoothAlpha =
+        FMath::InterpEaseInOut(
+            0.0f,
+            1.0f,
+            VisionTransitionAlpha,
+            2.0f
+        );
+
+    const FVector4 GrayscaleSaturation(
+        0.0f,
+        0.0f,
+        0.0f,
+        1.0f
+    );
+
+    FPostProcessSettings& Settings =
+        FollowCamera->PostProcessSettings;
+
+    Settings.bOverride_ColorSaturation = true;
+
+    Settings.ColorSaturation =
+        FMath::Lerp(
+            SavedColorSaturation,
+            GrayscaleSaturation,
+            SmoothAlpha
+        );
+
+    FollowCamera->PostProcessBlendWeight = 1.0f;
+
+    // 흑백 전환이 끝났습니다.
+    if (
+        VisionTransitionDirection > 0.0f &&
+        VisionTransitionAlpha >= 1.0f
+    )
+    {
+        VisionTransitionAlpha = 1.0f;
+        VisionTransitionDirection = 0.0f;
+
+        Settings.ColorSaturation =
+            GrayscaleSaturation;
+
+        return;
+    }
+
+    // 컬러 복귀가 끝났습니다.
+    if (
+        VisionTransitionDirection < 0.0f &&
+        VisionTransitionAlpha <= 0.0f
+    )
+    {
+        VisionTransitionAlpha = 0.0f;
+        VisionTransitionDirection = 0.0f;
+
+        // 전환이 완전히 끝난 후 원래 Override 값과
+        // Post Process Blend Weight까지 복구합니다.
+        RestoreVisionVisuals();
+    }
 }
 
 AKittyCharacterPlayer*
@@ -416,17 +529,21 @@ void UKTSpectralVisionComponent::ApplyVisionVisuals()
     // 카메라가 Color Saturation 값을 사용하도록 설정합니다.
     Settings.bOverride_ColorSaturation = true;
 
-    // RGB 채도를 0으로 만들면 흑백이 됩니다.
-    // 마지막 W는 1로 유지합니다.
+    // 즉시 흑백으로 만들지 않습니다.
+    // UpdateVisionTransition()이 현재 Alpha에 따라
+    // 컬러와 흑백 사이를 매 프레임 계산합니다.
     Settings.ColorSaturation =
-        FVector4(
-            0.0f,
-            0.0f,
-            0.0f,
-            1.0f
+        FMath::Lerp(
+            SavedColorSaturation,
+            FVector4(
+                0.0f,
+                0.0f,
+                0.0f,
+                1.0f
+            ),
+            VisionTransitionAlpha
         );
 
-    // 카메라 Post Process를 화면에 완전히 적용합니다.
     FollowCamera->PostProcessBlendWeight = 1.0f;
 }
 

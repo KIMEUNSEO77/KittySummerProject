@@ -123,6 +123,20 @@ float SavedPostProcessBlendWeight = 0.0f;
 
 bool bHasSavedVisualSettings = false;
 	
+ //컬러와 흑백 사이를 전환하는 시간입니다.
+	UPROPERTY(
+		EditDefaultsOnly,
+		BlueprintReadOnly,
+		Category = "Spectral Vision|Visual",
+		meta = (
+			AllowPrivateAccess = "true",
+			ClampMin = "0.01",
+			Units = "s"
+		)
+	)
+	float VisionFadeDuration = 0.3f;
+
+	
 	float VisionTransitionAlpha = 0.0f;
 	float VisionTransitionDirection = 0.0f;
 	
