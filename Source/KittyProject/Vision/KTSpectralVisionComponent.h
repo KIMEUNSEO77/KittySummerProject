@@ -112,7 +112,17 @@ private:
 	float SavedCameraArmLength = 0.0f;
 	FVector SavedCameraSocketOffset = FVector::ZeroVector;
 	float SavedCameraFOV = 90.0f;
+	
+// Spectral Vision 진입 전 카메라 색상 설정을 저장합니다.
+bool bSavedOverrideColorSaturation = false;
 
+FVector4 SavedColorSaturation =
+    FVector4(1.0f, 1.0f, 1.0f, 1.0f);
+
+float SavedPostProcessBlendWeight = 0.0f;
+
+bool bHasSavedVisualSettings = false;
+	
 	float VisionTransitionAlpha = 0.0f;
 	float VisionTransitionDirection = 0.0f;
 	

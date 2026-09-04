@@ -131,7 +131,10 @@ void UKTSpectralVisionComponent::ActivateVision()
     VisionTransitionDirection = 1.0f;
 
     bVisionEnabled = true;
-
+    
+    // 흑백 Post Process 적용
+    ApplyVisionVisuals();
+    
     // 현재 시간 배율을 저장한 후 슬로모션 적용
     PreviousTimeDilation =
         UGameplayStatics::GetGlobalTimeDilation(this);
@@ -175,7 +178,10 @@ void UKTSpectralVisionComponent::DeactivateVision()
     bVisionEnabled = false;
     // DOF 설정 복구
     RestoreDepthOfField();
-        
+    
+    // 흑백 화면을 기존 컬러 설정으로 복구
+    RestoreVisionVisuals();
+    
     // Spectral Vision을 켜기 전 시간 배율로 복구
     UGameplayStatics::SetGlobalTimeDilation(
         this,
@@ -367,4 +373,98 @@ void UKTSpectralVisionComponent::RestoreDepthOfField()
 
     Settings.bOverride_DepthOfFieldFarTransitionRegion =
         false;
+}
+
+
+void UKTSpectralVisionComponent::ApplyVisionVisuals()
+{
+    AKittyCharacterPlayer* Player =
+        GetPlayerCharacter();
+
+    if (!IsValid(Player))
+    {
+        return;
+    }
+
+    UCameraComponent* FollowCamera =
+        Player->GetFollowCamera();
+
+    if (!IsValid(FollowCamera))
+    {
+        return;
+    }
+
+    FPostProcessSettings& Settings =
+        FollowCamera->PostProcessSettings;
+
+    // 최초 활성화 시에만 기존 설정을 저장합니다.
+    // 같은 설정을 여러 번 덮어쓰지 않도록 보호합니다.
+    if (!bHasSavedVisualSettings)
+    {
+        bSavedOverrideColorSaturation =
+            Settings.bOverride_ColorSaturation;
+
+        SavedColorSaturation =
+            Settings.ColorSaturation;
+
+        SavedPostProcessBlendWeight =
+            FollowCamera->PostProcessBlendWeight;
+
+        bHasSavedVisualSettings = true;
+    }
+
+    // 카메라가 Color Saturation 값을 사용하도록 설정합니다.
+    Settings.bOverride_ColorSaturation = true;
+
+    // RGB 채도를 0으로 만들면 흑백이 됩니다.
+    // 마지막 W는 1로 유지합니다.
+    Settings.ColorSaturation =
+        FVector4(
+            0.0f,
+            0.0f,
+            0.0f,
+            1.0f
+        );
+
+    // 카메라 Post Process를 화면에 완전히 적용합니다.
+    FollowCamera->PostProcessBlendWeight = 1.0f;
+}
+
+void UKTSpectralVisionComponent::RestoreVisionVisuals()
+{
+    if (!bHasSavedVisualSettings)
+    {
+        return;
+    }
+
+    AKittyCharacterPlayer* Player =
+        GetPlayerCharacter();
+
+    if (!IsValid(Player))
+    {
+        return;
+    }
+
+    UCameraComponent* FollowCamera =
+        Player->GetFollowCamera();
+
+    if (!IsValid(FollowCamera))
+    {
+        return;
+    }
+
+    FPostProcessSettings& Settings =
+        FollowCamera->PostProcessSettings;
+
+    // Spectral Vision 진입 전에 사용하던 설정으로 복원합니다.
+    Settings.bOverride_ColorSaturation =
+        bSavedOverrideColorSaturation;
+
+    Settings.ColorSaturation =
+        SavedColorSaturation;
+
+    FollowCamera->PostProcessBlendWeight =
+        SavedPostProcessBlendWeight;
+
+    bHasSavedVisualSettings = false;
 }
