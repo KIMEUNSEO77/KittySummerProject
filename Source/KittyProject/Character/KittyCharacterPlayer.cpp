@@ -35,6 +35,9 @@
 #include "Interaction/KTCommunicationTerminal.h"
 #include "Vision/KTSpectralVisionComponent.h"
 
+#include "PhysicsEngine/PhysicalAnimationComponent.h"
+#include "Components/SkeletalMeshComponent.h"
+
 AKittyCharacterPlayer::AKittyCharacterPlayer()
 {
 	PrimaryActorTick.bCanEverTick = true;
@@ -174,11 +177,19 @@ AKittyCharacterPlayer::AKittyCharacterPlayer()
 	KeycardUseMesh->SetVisibility(false);
 	KeycardUseMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	KeycardUseMesh->SetCastShadow(false);
+	
+	//hit motion section
+	
+	PhysicalAnimationComponent = CreateDefaultSubobject<UPhysicalAnimationComponent>(TEXT("PhysicalAnimationComponent"));
 }
 
 void AKittyCharacterPlayer::BeginPlay()
 {
 	Super::BeginPlay();
+	//데미지 이벤트 연결
+	GetMesh()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	PhysicalAnimationComponent->SetSkeletalMeshComponent(GetMesh());
+	OnTakeAnyDamage.AddDynamic(this, &AKittyCharacterPlayer::OnDamaged);
 	
 	SetCharacterControl(CurrentCharacterControlType);
 }
@@ -189,6 +200,7 @@ void AKittyCharacterPlayer::Tick(float DeltaTime)
 	
 	CheckForInteractable();
 	UpdateInventoryCamera(DeltaTime);
+	UpdateHitReaction(DeltaTime);
 }
 
 void AKittyCharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -1316,4 +1328,77 @@ AKittyCharacterNonplayer* AKittyCharacterPlayer::FindAssassinationTarget() const
 	}
 	
 	return BestTarget;
+}
+
+void AKittyCharacterPlayer::OnDamaged(AActor* DamagedActor, float Damage, const UDamageType* DamageType,
+	AController* InstigatedBy, AActor* DamageCauser)
+{
+	if (Damage <= 0.0f || !IsValid(DamageCauser))
+	{
+		return;
+	}
+	
+	FVector ImpactDirection = GetActorLocation() - DamageCauser->GetActorLocation();
+	
+	ImpactDirection.Z = 20.0f;
+	StartHitReaction(ImpactDirection.GetSafeNormal());
+}
+
+void AKittyCharacterPlayer::StartHitReaction(const FVector& ImpactDirection)
+{
+	const FName SimRootBone(TEXT("Spine"));
+	const FName ImpulseBone (TEXT("Spine1"));
+	
+	FPhysicalAnimationData Setting;
+	
+	Setting.OrientationStrength = 180.0f;
+	Setting.AngularVelocityStrength = 20.0f;
+	Setting.PositionStrength = 220.0f;
+	Setting.VelocityStrength = 20.0f;
+	Setting.MaxLinearForce = 0.0f;
+	Setting.MaxAngularForce = 0.0f;
+	
+	PhysicalAnimationComponent->ApplyPhysicalAnimationSettingsBelow(SimRootBone, Setting, true);
+	GetMesh()->SetAllBodiesBelowSimulatePhysics(SimRootBone, true, true);
+	GetMesh()->SetAllBodiesBelowPhysicsBlendWeight(SimRootBone, HitPhysicsWeight, false, true);
+	GetMesh()->AddImpulse(ImpactDirection * HitImpulseStrength, ImpulseBone, true);
+
+	const FVector RotationAxis = FVector::CrossProduct(FVector::UpVector, ImpactDirection).GetSafeNormal();
+	
+	GetMesh()->AddAngularImpulseInRadians(RotationAxis * 7.0f,ImpulseBone,true);
+	
+	HitReactionElapsed = 0.0f;
+	bHitReactionActive = true;
+}
+
+void AKittyCharacterPlayer::UpdateHitReaction(float DeltaTime)
+{
+	if (!bHitReactionActive)
+	{
+		return;
+	}
+
+	HitReactionElapsed += DeltaTime;
+
+	const float Alpha = FMath::Clamp(1.0f - HitReactionElapsed / HitReactionDuration, 0.0f, 1.0f);
+
+	GetMesh()->SetAllBodiesBelowPhysicsBlendWeight(
+		TEXT("Spine"),
+		HitPhysicsWeight * Alpha,
+		false,
+		true);
+
+	if (HitReactionElapsed >= HitReactionDuration)
+	{
+		StopHitReaction();
+	}
+}
+
+void AKittyCharacterPlayer::StopHitReaction()
+{
+	GetMesh()->SetAllBodiesBelowPhysicsBlendWeight(TEXT("Spine1"), 0.0f, false, true);
+
+	GetMesh()->SetAllBodiesBelowSimulatePhysics(TEXT("Spine"), false, true);
+
+	bHitReactionActive = false;
 }

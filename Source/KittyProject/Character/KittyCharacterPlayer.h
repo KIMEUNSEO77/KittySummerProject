@@ -12,6 +12,7 @@ class AKittyCharacterNonplayer;
 class UKTSpectralVisionComponent;
 class USpringArmComponent;
 class UCameraComponent;
+class UPhysicalAnimationComponent;
 /**
  * 
  */
@@ -334,4 +335,29 @@ public:
 	TObjectPtr<AKittyCharacterNonplayer> AssassinationTarget;
 	
 	bool bAssassinationCommitted = false;
+	
+	//hit motion section
+public:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Hit Reaction", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UPhysicalAnimationComponent> PhysicalAnimationComponent;
+	
+	UFUNCTION()
+	void OnDamaged(AActor* DamagedActor,float Damage,const UDamageType* DamageType,AController* InstigatedBy,AActor* DamageCauser);
+	
+	
+	void StartHitReaction(const FVector& ImpactDirection);
+	void UpdateHitReaction(float DeltaTime);
+	void StopHitReaction();
+
+	bool bHitReactionActive = false;
+	float HitReactionElapsed = 0.0f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Hit Reaction")
+	float HitReactionDuration = 0.4f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Hit Reaction")
+	float HitPhysicsWeight = 0.65f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Hit Reaction")
+	float HitImpulseStrength = 650.0f;
 };
