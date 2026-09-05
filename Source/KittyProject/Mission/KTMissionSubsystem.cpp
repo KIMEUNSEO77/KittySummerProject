@@ -5,6 +5,9 @@
 #include "Save/KTSaveGame.h"
 #include "Save/KTSaveSubsystem.h"
 #include "Kismet/GameplayStatics.h"
+#include "Character/KittyCharacterPlayer.h"
+#include "Inventory/KTInventoryComponent.h"
+#include "Inventory/KTItemDataAsset.h"
 
 UKTMissionSubsystem* UKTMissionSubsystem::Get(
     const UObject* WorldContextObject)
@@ -51,6 +54,22 @@ void UKTMissionSubsystem::StartMission(
                 if (AController* Controller = PlayerPawn->GetController())
                 {
                     Controller->SetControlRotation(SaveData->PlayerRotation);
+                }
+                
+                if (AKittyCharacterPlayer* Player = Cast<AKittyCharacterPlayer>(PlayerPawn))
+                {
+                    if (UKTInventoryComponent* Inventory = Player->GetInventoryComponent())
+                    {
+                        for (const FKTInventorySaveEntry& SaveEntry : SaveData->InventoryItems)
+                        {
+                            UKTItemDataAsset* ItemData = SaveEntry.ItemData.LoadSynchronous();
+
+                            if (IsValid(ItemData) && SaveEntry.Quantity > 0)
+                            {
+                                Inventory->AddItem(ItemData, SaveEntry.Quantity);
+                            }
+                        }
+                    }
                 }
             }
 

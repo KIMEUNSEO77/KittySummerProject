@@ -9,7 +9,22 @@
 /**
  * 
  */
-UCLASS()
+
+class UKTItemDataAsset;
+
+USTRUCT(BlueprintType)
+struct FKTInventorySaveEntry
+{
+	GENERATED_BODY()
+
+	UPROPERTY(SaveGame, BlueprintReadWrite, Category = "Save")
+	TSoftObjectPtr<UKTItemDataAsset> ItemData;
+
+	UPROPERTY(SaveGame, BlueprintReadWrite, Category = "Save")
+	int32 Quantity = 0;
+};
+
+UCLASS(BlueprintType)
 class KITTYPROJECT_API UKTSaveGame : public USaveGame
 {
 	GENERATED_BODY()
@@ -37,4 +52,16 @@ public:
 
 	UPROPERTY(SaveGame, BlueprintReadWrite, Category = "Save")
 	FRotator PlayerRotation = FRotator::ZeroRotator;
+	
+	// 출입증·데이터 칩 등 일반 인벤토리 아이템
+	UPROPERTY(SaveGame, BlueprintReadWrite, Category = "Save")
+	TArray<FKTInventorySaveEntry> InventoryItems;
+
+	// 권총은 일반 인벤토리와 별도로 관리
+	UPROPERTY(SaveGame, BlueprintReadWrite, Category = "Save")
+	bool bHasPistol = false;
+
+	// 문 개방·CCTV 차단 등 완료된 월드 상태
+	UPROPERTY(SaveGame, BlueprintReadWrite, Category = "Save")
+	TArray<FName> CompletedWorldStateIds;
 };

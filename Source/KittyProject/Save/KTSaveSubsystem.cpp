@@ -5,6 +5,8 @@
 
 #include "Kismet/GameplayStatics.h"
 #include "Save/KTSaveGame.h"
+#include "Character/KittyCharacterPlayer.h"
+#include "Inventory/KTInventoryComponent.h"
 
 const FString UKTSaveSubsystem::SaveSlotName = TEXT("AutoSave");
 
@@ -45,6 +47,30 @@ bool UKTSaveSubsystem::SaveProgress(int32 MissionStepIndex, FName CheckpointId)
 	{
 		SaveData->PlayerLocation = PlayerPawn->GetActorLocation();
 		SaveData->PlayerRotation = PlayerPawn->GetActorRotation();
+		
+		if (AKittyCharacterPlayer* Player = Cast<AKittyCharacterPlayer>(PlayerPawn))
+		{
+			SaveData->bHasPistol = Player->HasPistol();
+
+			if (UKTInventoryComponent* Inventory = Player->GetInventoryComponent())
+			{
+				SaveData->InventoryItems.Reset();
+
+				for (const FKTInventoryEntry& Entry : Inventory->GetItems())
+				{
+					if (!IsValid(Entry.ItemData.Get()) || Entry.Quantity <= 0)
+					{
+						continue;
+					}
+
+					FKTInventorySaveEntry SaveEntry;
+					SaveEntry.ItemData = Entry.ItemData.Get();
+					SaveEntry.Quantity = Entry.Quantity;
+
+					SaveData->InventoryItems.Add(SaveEntry);
+				}
+			}
+		}
 	}
 
 	return UGameplayStatics::SaveGameToSlot(SaveData, SaveSlotName, UserIndex);
