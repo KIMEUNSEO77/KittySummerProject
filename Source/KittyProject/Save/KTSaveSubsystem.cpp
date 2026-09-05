@@ -67,6 +67,8 @@ bool UKTSaveSubsystem::DoesSaveExist() const
 
 bool UKTSaveSubsystem::DeleteSave()
 {
+	PendingSaveData = nullptr;
+	
 	if (!DoesSaveExist())
 	{
 		return true;
