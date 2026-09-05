@@ -2,6 +2,9 @@
 
 #include "Mission/KTMissionDataAsset.h"
 #include "Save/KTSaveSubsystem.h"
+#include "Save/KTSaveGame.h"
+#include "Save/KTSaveSubsystem.h"
+#include "Kismet/GameplayStatics.h"
 
 UKTMissionSubsystem* UKTMissionSubsystem::Get(
     const UObject* WorldContextObject)
@@ -33,6 +36,27 @@ void UKTMissionSubsystem::StartMission(
     CurrentMission = NewMission;
     CurrentStepIndex = 0;
     CurrentState = EMissionState::Active;
+    
+    if (UKTSaveSubsystem* SaveSubsystem = UKTSaveSubsystem::Get(this))
+    {
+        if (UKTSaveGame* SaveData = SaveSubsystem->GetPendingSaveData())
+        {
+            CurrentStepIndex = FMath::Clamp(SaveData->MissionStepIndex, 0, CurrentMission->Steps.Num() - 1);
+
+            if (APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(this, 0))
+            {
+                PlayerPawn->SetActorLocationAndRotation(SaveData->PlayerLocation, SaveData->PlayerRotation, false,
+                    nullptr, ETeleportType::TeleportPhysics);
+
+                if (AController* Controller = PlayerPawn->GetController())
+                {
+                    Controller->SetControlRotation(SaveData->PlayerRotation);
+                }
+            }
+
+            SaveSubsystem->ClearPendingSaveData();
+        }
+    }
 
     BroadcastCurrentStep();
 }
