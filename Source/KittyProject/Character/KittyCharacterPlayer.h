@@ -163,7 +163,7 @@ protected:
 public:
 	// 권총 Actor를 플레이어 손에 장착
 	bool AcquirePistol(class AActor* PistolActor);
-	
+	bool HasPistol() const { return bHasPistol;}
 	bool IsAiming() const { return bIsAiming;}
 	
 protected:

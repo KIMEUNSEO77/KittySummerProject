@@ -102,4 +102,14 @@ private:
 
 	float StepTransitionDelay = 1.5f;
 	
+	// Save Game Section
+public:
+	UFUNCTION(BlueprintPure, Category = "Mission")
+	int32 GetCurrentStepIndex() const
+	{
+		return CurrentStepIndex;
+	}
+
+	UFUNCTION(BlueprintCallable, Category = "Mission")
+	void RestoreMissionProgress(UKTMissionDataAsset* MissionToRestore, int32 SavedStepIndex);
 };

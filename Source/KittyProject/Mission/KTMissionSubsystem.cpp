@@ -1,6 +1,14 @@
 #include "Mission/KTMissionSubsystem.h"
 
 #include "Mission/KTMissionDataAsset.h"
+#include "Save/KTSaveSubsystem.h"
+#include "Save/KTSaveGame.h"
+#include "Save/KTSaveSubsystem.h"
+#include "Kismet/GameplayStatics.h"
+#include "Character/KittyCharacterPlayer.h"
+#include "Inventory/KTInventoryComponent.h"
+#include "Inventory/KTItemDataAsset.h"
+#include "Item/KTPistolPickup.h"
 
 UKTMissionSubsystem* UKTMissionSubsystem::Get(
     const UObject* WorldContextObject)
@@ -32,6 +40,53 @@ void UKTMissionSubsystem::StartMission(
     CurrentMission = NewMission;
     CurrentStepIndex = 0;
     CurrentState = EMissionState::Active;
+    
+    if (UKTSaveSubsystem* SaveSubsystem = UKTSaveSubsystem::Get(this))
+    {
+        if (UKTSaveGame* SaveData = SaveSubsystem->GetPendingSaveData())
+        {
+            CurrentStepIndex = FMath::Clamp(SaveData->MissionStepIndex, 0, CurrentMission->Steps.Num() - 1);
+
+            if (APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(this, 0))
+            {
+                PlayerPawn->SetActorLocationAndRotation(SaveData->PlayerLocation, SaveData->PlayerRotation, false,
+                    nullptr, ETeleportType::TeleportPhysics);
+
+                if (AController* Controller = PlayerPawn->GetController())
+                {
+                    Controller->SetControlRotation(SaveData->PlayerRotation);
+                }
+                
+                if (AKittyCharacterPlayer* Player = Cast<AKittyCharacterPlayer>(PlayerPawn))
+                {
+                    if (UKTInventoryComponent* Inventory = Player->GetInventoryComponent())
+                    {
+                        for (const FKTInventorySaveEntry& SaveEntry : SaveData->InventoryItems)
+                        {
+                            UKTItemDataAsset* ItemData = SaveEntry.ItemData.LoadSynchronous();
+
+                            if (IsValid(ItemData) && SaveEntry.Quantity > 0)
+                            {
+                                Inventory->AddItem(ItemData, SaveEntry.Quantity);
+                            }
+                        }
+                    }
+                    
+                    if (SaveData->bHasPistol && !Player->HasPistol())
+                    {
+                        AKTPistolPickup* Pistol = Cast<AKTPistolPickup>(UGameplayStatics::GetActorOfClass(this, AKTPistolPickup::StaticClass()));
+
+                        if (IsValid(Pistol))
+                        {
+                            Player->AcquirePistol(Pistol);
+                        }
+                    }
+                }
+            }
+
+            SaveSubsystem->ClearPendingSaveData();
+        }
+    }
 
     BroadcastCurrentStep();
 }
@@ -185,6 +240,31 @@ void UKTMissionSubsystem::BroadcastCurrentStep()
 void UKTMissionSubsystem::StartNextStep()
 {
     CurrentStepIndex++;
+    bIsTransitioning = false;
+
+    BroadcastCurrentStep();
+    
+    if (UKTSaveSubsystem* SaveSubsystem = UKTSaveSubsystem::Get(this))
+    {
+        const FName CheckpointId(*FString::Printf(TEXT("MissionStep_%d"), CurrentStepIndex));
+
+        SaveSubsystem->SaveProgress(CurrentStepIndex, CheckpointId);
+    }
+}
+
+void UKTMissionSubsystem::RestoreMissionProgress(UKTMissionDataAsset* MissionToRestore, int32 SavedStepIndex)
+{
+    if (!IsValid(MissionToRestore) || MissionToRestore->Steps.IsEmpty())
+    {
+        return;
+    }
+
+    GetWorld()->GetTimerManager().ClearTimer(StepTransitionTimer);
+
+    CurrentMission = MissionToRestore;
+    CurrentStepIndex = FMath::Clamp(SavedStepIndex, 0, CurrentMission->Steps.Num() - 1);
+
+    CurrentState = EMissionState::Active;
     bIsTransitioning = false;
 
     BroadcastCurrentStep();
