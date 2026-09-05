@@ -75,5 +75,23 @@ bool UKTSaveSubsystem::DeleteSave()
 	return UGameplayStatics::DeleteGameInSlot(SaveSlotName, UserIndex);
 }
 
+bool UKTSaveSubsystem::ContinueGame()
+{
+	PendingSaveData = LoadProgress();
+
+	if (!IsValid(PendingSaveData) || PendingSaveData->SavedLevelName.IsNone())
+	{
+		return false;
+	}
+
+	UGameplayStatics::OpenLevel(this, PendingSaveData->SavedLevelName);
+
+	return true;
+}
+
+void UKTSaveSubsystem::ClearPendingSaveData()
+{
+	PendingSaveData = nullptr;
+}
 
 

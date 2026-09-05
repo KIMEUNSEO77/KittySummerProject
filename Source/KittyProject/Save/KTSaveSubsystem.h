@@ -29,8 +29,23 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Save")
 	bool DeleteSave();
+	
+	UFUNCTION(BlueprintCallable, Category = "Save")
+	bool ContinueGame();
+
+	UFUNCTION(BlueprintPure, Category = "Save")
+	UKTSaveGame* GetPendingSaveData() const
+	{
+		return PendingSaveData;
+	}
+
+	UFUNCTION(BlueprintCallable, Category = "Save")
+	void ClearPendingSaveData();
 
 private:
 	static const FString SaveSlotName;
 	static constexpr int32 UserIndex = 0;
+	
+	UPROPERTY()
+	TObjectPtr<UKTSaveGame> PendingSaveData;
 };
