@@ -1,6 +1,7 @@
 #include "Mission/KTMissionSubsystem.h"
 
 #include "Mission/KTMissionDataAsset.h"
+#include "Save/KTSaveSubsystem.h"
 
 UKTMissionSubsystem* UKTMissionSubsystem::Get(
     const UObject* WorldContextObject)
@@ -188,6 +189,13 @@ void UKTMissionSubsystem::StartNextStep()
     bIsTransitioning = false;
 
     BroadcastCurrentStep();
+    
+    if (UKTSaveSubsystem* SaveSubsystem = UKTSaveSubsystem::Get(this))
+    {
+        const FName CheckpointId(*FString::Printf(TEXT("MissionStep_%d"), CurrentStepIndex));
+
+        SaveSubsystem->SaveProgress(CurrentStepIndex, CheckpointId);
+    }
 }
 
 void UKTMissionSubsystem::RestoreMissionProgress(UKTMissionDataAsset* MissionToRestore, int32 SavedStepIndex)
