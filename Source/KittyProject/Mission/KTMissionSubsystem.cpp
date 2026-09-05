@@ -8,6 +8,7 @@
 #include "Character/KittyCharacterPlayer.h"
 #include "Inventory/KTInventoryComponent.h"
 #include "Inventory/KTItemDataAsset.h"
+#include "Item/KTPistolPickup.h"
 
 UKTMissionSubsystem* UKTMissionSubsystem::Get(
     const UObject* WorldContextObject)
@@ -68,6 +69,16 @@ void UKTMissionSubsystem::StartMission(
                             {
                                 Inventory->AddItem(ItemData, SaveEntry.Quantity);
                             }
+                        }
+                    }
+                    
+                    if (SaveData->bHasPistol && !Player->HasPistol())
+                    {
+                        AKTPistolPickup* Pistol = Cast<AKTPistolPickup>(UGameplayStatics::GetActorOfClass(this, AKTPistolPickup::StaticClass()));
+
+                        if (IsValid(Pistol))
+                        {
+                            Player->AcquirePistol(Pistol);
                         }
                     }
                 }

@@ -72,4 +72,11 @@ protected:
 	// 출입증 인증 성공 시 켜지는 초록색 조명
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Door|Components")
 	TObjectPtr<class UPointLightComponent> AccessGrantedLight;
+	
+	// Save Section
+protected:
+	UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "Save")
+	FName SaveId = NAME_None;
+
+	void ApplySavedOpenState();
 };

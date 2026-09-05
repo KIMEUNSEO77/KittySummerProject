@@ -73,6 +73,8 @@ bool UKTSaveSubsystem::SaveProgress(int32 MissionStepIndex, FName CheckpointId)
 		}
 	}
 
+	SaveData->CompletedWorldStateIds = RuntimeCompletedWorldStateIds;
+	
 	return UGameplayStatics::SaveGameToSlot(SaveData, SaveSlotName, UserIndex);
 }
 
@@ -94,6 +96,7 @@ bool UKTSaveSubsystem::DoesSaveExist() const
 bool UKTSaveSubsystem::DeleteSave()
 {
 	PendingSaveData = nullptr;
+	RuntimeCompletedWorldStateIds.Reset();
 	
 	if (!DoesSaveExist())
 	{
@@ -112,6 +115,8 @@ bool UKTSaveSubsystem::ContinueGame()
 		return false;
 	}
 
+	RuntimeCompletedWorldStateIds = PendingSaveData->CompletedWorldStateIds;
+	
 	UGameplayStatics::OpenLevel(this, PendingSaveData->SavedLevelName);
 
 	return true;
@@ -120,6 +125,21 @@ bool UKTSaveSubsystem::ContinueGame()
 void UKTSaveSubsystem::ClearPendingSaveData()
 {
 	PendingSaveData = nullptr;
+}
+
+void UKTSaveSubsystem::MarkWorldStateCompleted(FName StateId)
+{
+	if (StateId.IsNone())
+	{
+		return;
+	}
+
+	RuntimeCompletedWorldStateIds.AddUnique(StateId);
+}
+
+bool UKTSaveSubsystem::IsWorldStateCompleted(FName StateId) const
+{
+	return !StateId.IsNone() && RuntimeCompletedWorldStateIds.Contains(StateId);
 }
 
 

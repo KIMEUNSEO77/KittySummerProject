@@ -48,4 +48,16 @@ private:
 	
 	UPROPERTY()
 	TObjectPtr<UKTSaveGame> PendingSaveData;
+	
+	// Status Store Section
+public:
+	UFUNCTION(BlueprintCallable, Category = "Save|World State")
+	void MarkWorldStateCompleted(FName StateId);
+
+	UFUNCTION(BlueprintPure, Category = "Save|World State")
+	bool IsWorldStateCompleted(FName StateId) const;
+	
+private:
+	UPROPERTY()
+	TArray<FName> RuntimeCompletedWorldStateIds;
 };

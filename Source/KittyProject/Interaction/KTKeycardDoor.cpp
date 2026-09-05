@@ -11,6 +11,7 @@
 #include "GameplayTagContainer.h"
 #include "Engine/Engine.h"
 #include "Components/PointLightComponent.h"
+#include "Save/KTSaveSubsystem.h"
 
 // Sets default values
 AKTKeycardDoor::AKTKeycardDoor()
@@ -94,6 +95,14 @@ void AKTKeycardDoor::BeginPlay()
 
 	// 닫힌 위치에서 위쪽으로 OpenHeight만큼 이동한 위치
 	OpenLocation = ClosedLocation + FVector(0.0f, 0.0f, OpenHeight);
+	
+	if (UKTSaveSubsystem* SaveSubsystem = UKTSaveSubsystem::Get(this))
+	{
+		if (SaveSubsystem->IsWorldStateCompleted(SaveId))
+		{
+			ApplySavedOpenState();
+		}
+	}
 }
 
 void AKTKeycardDoor::Tick(float DeltaTime)
@@ -117,6 +126,11 @@ void AKTKeycardDoor::Tick(float DeltaTime)
 
 		bIsOpening = false;
 		bIsOpen = true;
+		
+		if (UKTSaveSubsystem* SaveSubsystem = UKTSaveSubsystem::Get(this))
+		{
+			SaveSubsystem->MarkWorldStateCompleted(SaveId);
+		}
 		
 		if (UKTMissionSubsystem* MissionSubsystem =UKTMissionSubsystem::Get(this))
 		{
@@ -191,5 +205,29 @@ void AKTKeycardDoor::Interact_Implementation(AActor* Interactor)
 FText AKTKeycardDoor::GetInteractionText_Implementation() const
 {
 	return FText::FromString(TEXT("출입증 사용하기"));
+}
+
+void AKTKeycardDoor::ApplySavedOpenState()
+{
+	if (!IsValid(DoorMesh))
+	{
+		return;
+	}
+
+	DoorMesh->SetRelativeLocation(OpenLocation);
+
+	bIsOpen = true;
+	bIsOpening = false;
+	SetActorTickEnabled(false);
+
+	if (IsValid(AccessGrantedLight))
+	{
+		AccessGrantedLight->SetVisibility(true);
+	}
+
+	if (IsValid(InteractionCollision))
+	{
+		InteractionCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
 }
 
