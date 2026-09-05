@@ -189,3 +189,21 @@ void UKTMissionSubsystem::StartNextStep()
 
     BroadcastCurrentStep();
 }
+
+void UKTMissionSubsystem::RestoreMissionProgress(UKTMissionDataAsset* MissionToRestore, int32 SavedStepIndex)
+{
+    if (!IsValid(MissionToRestore) || MissionToRestore->Steps.IsEmpty())
+    {
+        return;
+    }
+
+    GetWorld()->GetTimerManager().ClearTimer(StepTransitionTimer);
+
+    CurrentMission = MissionToRestore;
+    CurrentStepIndex = FMath::Clamp(SavedStepIndex, 0, CurrentMission->Steps.Num() - 1);
+
+    CurrentState = EMissionState::Active;
+    bIsTransitioning = false;
+
+    BroadcastCurrentStep();
+}
