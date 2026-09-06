@@ -10,6 +10,8 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Player/KittyPlayerController.h"
+#include "Mission/KTMissionSubsystem.h"
+#include "GameplayTagContainer.h"
 
 UKTSpectralVisionComponent::UKTSpectralVisionComponent()
 {
@@ -156,6 +158,27 @@ void UKTSpectralVisionComponent::ActivateVision()
     );
 
     VisionSubsystem->SetVisionEnabled(true);
+
+    // Spectral Vision이 실제로 활성화된 뒤 미션 시스템에 알립니다.
+    // 현재 미션 단계의 CompletionEventTag가 이 태그일 때만
+    // 해당 단계가 완료되므로, 다른 단계에서 Q를 눌러도 영향이 없습니다.
+    if (UKTMissionSubsystem* MissionSubsystem =
+        UKTMissionSubsystem::Get(this))
+    {
+        const FGameplayTag VisionActivatedTag =
+            FGameplayTag::RequestGameplayTag(
+                TEXT("Mission.Event.SpectralVision.Activated"),
+                false
+            );
+
+        if (VisionActivatedTag.IsValid())
+        {
+            MissionSubsystem->BroadcastMissionEvent(
+                VisionActivatedTag,
+                Player
+            );
+        }
+    }
 
     World->GetTimerManager().SetTimer(
         TargetRefreshTimerHandle,
