@@ -183,38 +183,11 @@ void UKTBatonAttackComponent::UpdateHitWindow()
 		break;
 	}
 
-	DrawDebugLine(
-		World,
-		PreviousHitCenter,
-		CurrentHitCenter,
-		FColor::Yellow,
-		false,
-		0.1f,
-		0,
-		2.0f
-	);
+	//DrawDebugLine(World,PreviousHitCenter,CurrentHitCenter,FColor::Yellow,false,0.1f,0,2.0f);
 
-	DrawDebugSphere(
-		World,
-		PreviousHitCenter,
-		HitRadius,
-		12,
-		FColor::Orange,
-		false,
-		1.0f
-	);
+	//DrawDebugSphere(World,PreviousHitCenter,HitRadius,12,FColor::Orange,false,1.0f);
 
-	DrawDebugSphere(
-		World,
-		CurrentHitCenter,
-		HitRadius,
-		12,
-		bTargetInSweep
-			? FColor::Green
-			: FColor::Red,
-		false,
-		1.0f
-	);
+	//DrawDebugSphere(World,CurrentHitCenter,HitRadius,12,bTargetInSweep	? FColor::Green	: FColor::Red,false,1.0f);
 
 	// 맞은 뒤에도 계속 갱신해야 한다.
 	PreviousHitCenter = CurrentHitCenter;
